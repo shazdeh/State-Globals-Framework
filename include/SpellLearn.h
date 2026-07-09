@@ -1,6 +1,6 @@
 #pragma once
 
-namespace SpellLearn {
+namespace S_SpellLearn {
     struct Rule {
         int skillLevel = -1;
         std::string skillComp = "=";
@@ -8,11 +8,14 @@ namespace SpellLearn {
         float mod = 1.0f;
     };
 
+    std::unordered_map<TESGlobal*, Rule> globals;
+
     class EventSink : public BSTEventSink<SpellsLearned::Event> {
-        BSEventNotifyControl ProcessEvent(const SpellsLearned::Event* event, BSTEventSource<SpellsLearned::Event>*) {
-            if (event && event->spell) {
-                UpdateSpellLearnGlobs(event->spell);
-            }
+        BSEventNotifyControl ProcessEvent(const SpellsLearned::Event* event, BSTEventSource<SpellsLearned::Event>*) override {
+            //if (event && event->spell) {
+            //    ConsoleLog::GetSingleton()->Print(fmt::format("Learn: {:x}", event->spell->GetFormID()).c_str());
+            //    //UpdateSpellLearnGlobs(event->spell);
+            //}
             return BSEventNotifyControl::kContinue;
         }
     };
@@ -30,40 +33,38 @@ namespace SpellLearn {
         return min;
     }
 
-    struct LearnSpell {
-        static Rule parseJSON(const nlohmann::json_abi_v3_12_0::json& item) {
-            auto& data = item.at("learnspell");
-            Rule rule;
-            if (data.contains("skillLevel")) {
-                rule.skillLevel = data.at("skillLevel").get<int>();
-                if (data.contains("skillComp")) {
-                    rule.skillComp = data.at("skillComp").get<std::string>();
-                }
+    static std::optional<Rule> parseJSON(const nlohmann::json_abi_v3_12_0::json& item) {
+        auto& data = item.at("learnspell");
+        Rule rule;
+        if (data.contains("skillLevel")) {
+            rule.skillLevel = data.at("skillLevel").get<int>();
+            if (data.contains("skillComp")) {
+                rule.skillComp = data.at("skillComp").get<std::string>();
             }
-            if (data.contains("skill")) {
-                auto skill = data.at("skill").get<int>();
-                switch (skill) {
-                    case 18:
-                        rule.av = ActorValue::kAlteration;
-                        break;
-                    case 19:
-                        rule.av = ActorValue::kConjuration;
-                        break;
-                    case 20:
-                        rule.av = ActorValue::kDestruction;
-                        break;
-                    case 21:
-                        rule.av = ActorValue::kIllusion;
-                        break;
-                    case 22:
-                        rule.av = ActorValue::kRestoration;
-                        break;
-                    default:
-                        return {};
-                }
-            }
-            return rule;
         }
+        if (data.contains("skill")) {
+            auto skill = data.at("skill").get<int>();
+            switch (skill) {
+                case 18:
+                    rule.av = ActorValue::kAlteration;
+                    break;
+                case 19:
+                    rule.av = ActorValue::kConjuration;
+                    break;
+                case 20:
+                    rule.av = ActorValue::kDestruction;
+                    break;
+                case 21:
+                    rule.av = ActorValue::kIllusion;
+                    break;
+                case 22:
+                    rule.av = ActorValue::kRestoration;
+                    break;
+                default:
+                    return {};
+            }
+        }
+        return rule;
     };
 
     void UpdateSpellLearnGlobs(SpellItem* spell) {
@@ -79,7 +80,9 @@ namespace SpellLearn {
     }
 
     void SetupEvents() {
-        static EventSink spellSink;
-        SpellsLearned::GetEventSource()->AddEventSink(&spellSink);
+        if (!globals.empty()) {
+            static EventSink spellSink;
+            SpellsLearned::GetEventSource()->AddEventSink<SpellsLearned::Event>(&spellSink);
+        }
     }
 }
