@@ -4,3 +4,4 @@
 
 namespace logger = SKSE::log;
 using namespace std::literals;
+using namespace RE;
