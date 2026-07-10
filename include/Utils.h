@@ -71,4 +71,51 @@ namespace Utils {
 
         return true;
     }
+
+    BSTArray<RE::Effect*> GetMagicEffects(TESForm* a_form) {
+        switch (a_form->GetFormType()) {
+            case FormType::Spell:
+                return a_form->As<SpellItem>()->effects;
+
+            case FormType::AlchemyItem:
+                return a_form->As<AlchemyItem>()->effects;
+
+            case FormType::Ingredient:
+                return a_form->As<IngredientItem>()->effects;
+
+            case FormType::Scroll:
+                return a_form->As<ScrollItem>()->effects;
+
+            case FormType::Enchantment:
+                return a_form->As<EnchantmentItem>()->effects;
+        }
+        return {};
+    }
+
+    bool FormHasAnyMagicEffect(TESForm* a_form, std::unordered_set<EffectSetting*> a_effectsSet) {
+        BSTArray<RE::Effect*> effects = GetMagicEffects(a_form);
+
+        if (effects.size()) {
+            for (Effect* effect : effects) {
+                if (a_effectsSet.contains(effect->baseEffect)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    bool FormHasMagicEffectKeyword(TESForm* a_form, std::vector<BGSKeyword*> a_keywords) {
+        BSTArray<RE::Effect*> effects = GetMagicEffects(a_form);
+        if (effects.size()) {
+            for (Effect* effect : effects) {
+                if (effect->baseEffect->HasKeywordInArray(a_keywords, false)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
 }

@@ -12,53 +12,6 @@ namespace S_SpellCast {
 
     std::unordered_map<TESGlobal*, Rule> globals;
 
-    BSTArray<RE::Effect*> GetEffects(TESForm* a_form) {
-        switch (a_form->GetFormType()) {
-            case FormType::Spell:
-                return a_form->As<SpellItem>()->effects;
-
-            case FormType::AlchemyItem:
-                return a_form->As<AlchemyItem>()->effects;
-
-            case FormType::Ingredient:
-                return a_form->As<IngredientItem>()->effects;
-
-            case FormType::Scroll:
-                return a_form->As<ScrollItem>()->effects;
-
-            case FormType::Enchantment:
-                return a_form->As<EnchantmentItem>()->effects;
-        }
-        return {};
-    }
-
-    bool FormHasAnyMagicEffect(TESForm* a_form, std::unordered_set<EffectSetting*> a_effectsSet) {
-        BSTArray<RE::Effect*> effects = GetEffects(a_form);
-
-        if (effects.size()) {
-            for (Effect* effect : effects) {
-                if (a_effectsSet.contains(effect->baseEffect)) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
-    bool FormHasMagicEffectKeyword(TESForm* a_form, std::vector<BGSKeyword*> a_keywords) {
-        BSTArray<RE::Effect*> effects = GetEffects(a_form);
-        if (effects.size()) {
-            for (Effect* effect : effects) {
-                if (effect->baseEffect->HasKeywordInArray(a_keywords, false)) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
     void Process(FormID spellID) {
         TESForm* spell = TESForm::LookupByID(spellID);
         for (auto& item : globals) {
@@ -69,9 +22,9 @@ namespace S_SpellCast {
                 !spell->HasKeywordInArray(item.second.keywords, item.second.keywordMatchAll))
                 continue;
             if (!item.second.forms.empty() && !item.second.forms.contains(spell)) continue;
-            if (!item.second.magicEffects.empty() && !FormHasAnyMagicEffect(spell, item.second.magicEffects)) continue;
+            if (!item.second.magicEffects.empty() && !Utils::FormHasAnyMagicEffect(spell, item.second.magicEffects)) continue;
             if (!item.second.magicEffectKeywords.empty() &&
-                !FormHasMagicEffectKeyword(spell, item.second.magicEffectKeywords))
+                !Utils::FormHasMagicEffectKeyword(spell, item.second.magicEffectKeywords))
                 continue;
 
             item.first->value += 1;
