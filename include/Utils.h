@@ -39,4 +39,25 @@ namespace Utils {
 
         return true;
     }
+
+    template <typename T>
+    bool FillFormsSet(const nlohmann::json_abi_v3_12_0::json& data, std::unordered_set<T*>& a_set) {
+        if (data.is_array()) {
+            for (auto& item : data) {
+                T* form = GetForm<T>(item.get<std::string>());
+                if (form)
+                    a_set.insert(form);
+                else
+                    return false;
+            }
+        } else if (data.is_string()) {
+            T* form = GetForm<T>(data.get<std::string>());
+            if (form)
+                a_set.insert(form);
+            else
+                return false;
+        }
+
+        return true;
+    }
 }

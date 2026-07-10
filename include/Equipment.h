@@ -29,8 +29,8 @@ namespace Equipment {
                     }
                 }
             } else if (item.second.type == 26) {
-                for (auto& [_item, data] : inventory) {
-                    if (!_item->Is(FormType::Armor) || !data.second->IsWorn()) continue;
+                for (auto& [inventoryItem, data] : inventory) {
+                    if (!inventoryItem->Is(FormType::Armor) || !data.second->IsWorn()) continue;
                     if (item.second.isStolen != -1 && !!data.second->GetOwner() != item.second.isStolen) continue;
                     if (item.second.isEnchanted != -1 && data.second->IsEnchanted() != !!item.second.isEnchanted)
                         continue;

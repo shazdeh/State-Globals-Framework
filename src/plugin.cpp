@@ -1,76 +1,16 @@
 #include "logger.h"
-#include "nlohmann/json.hpp"
-using json = nlohmann::json;
-#include "Utils.h"
 #include <unordered_set>
+#include "Utils.h"
 #include "SpellLearn.h"
 #include "Equipment.h"
 #include "Kills.h"
+#include "MagicEffect.h"
+#include "Inventory.h"
 
 //#include "ClibUtil/editorID.hpp"
 
 
-#pragma once
 
-namespace S_MagicEffect {
-    bool bQueued;
-
-    struct Rule {
-        std::optional<MagicSystem::SpellType> spellType;
-        bool unique = true;
-    };
-
-    std::unordered_map<TESGlobal*, Rule> globals;
-
-    void Process() {
-        auto* mt = PlayerCharacter::GetSingleton()->AsMagicTarget();
-        if (!mt) return;
-        float value = 0.0f;
-        auto effects = mt->GetActiveEffectList();
-        for (auto& item : globals) {
-            std::unordered_set<MagicItem*> visited;
-            for (auto* effect : *effects) {
-                if (!effect || !effect->spell) continue;
-                if (item.second.spellType && effect->spell->GetSpellType() != item.second.spellType) continue;
-                if (item.second.unique) {
-                    if (visited.contains(effect->spell)) continue;
-                    visited.insert(effect->spell);
-                }
-                
-                value += 1;
-            }
-            item.first->value = value;
-        }
-        bQueued = false;
-    }
-
-    class EventSink : public BSTEventSink<TESMagicEffectApplyEvent> {
-        BSEventNotifyControl ProcessEvent(const TESMagicEffectApplyEvent* event,
-                                          BSTEventSource<TESMagicEffectApplyEvent>*) {
-            if (bQueued || !event || !event->target || !event->target->IsPlayerRef())
-                return BSEventNotifyControl::kContinue;
-            SKSE::GetTaskInterface()->AddTask(Process);
-            bQueued = true;
-            return BSEventNotifyControl::kContinue;
-        }
-    };
-
-    static std::optional<Rule> parseJSON(const nlohmann::json_abi_v3_12_0::json& item) {
-        auto& data = item.at("magiceffect");
-        Rule rule;
-        if (data.contains("spellType")) {
-            rule.spellType = static_cast<MagicSystem::SpellType>(data.at("spellType").get<int>());
-        }
-        return rule;
-    }
-
-    void SetupEvents() {
-        if (!globals.empty()) {
-            static EventSink g_sink;
-            ScriptEventSourceHolder::GetSingleton()->AddEventSink<TESMagicEffectApplyEvent>(&g_sink);
-        }
-    }
-}
 
 static void ParseData(const json& data) {
     for (const auto& item : data) {
@@ -103,6 +43,18 @@ static void ParseData(const json& data) {
                 S_MagicEffect::globals.insert({global, result.value()});
             }
         }
+        if (item.contains("inventory")) {
+            auto result = S_Inventory::parseJSON(item);
+            if (result.has_value()) {
+                S_Inventory::globals.insert({global, result.value()});
+            }
+        }
+        if (item.contains("spellcast")) {
+            auto result = S_SpellCast::parseJSON(item);
+            if (result.has_value()) {
+                S_SpellCast::globals.insert({global, result.value()});
+            }
+        }
     }
 }
 
@@ -129,6 +81,8 @@ void OnMessage(SKSE::MessagingInterface::Message* message) {
         Kills::SetupEvents();
         S_SpellLearn::SetupEvents();
         S_MagicEffect::SetupEvents();
+        S_Inventory::SetupEvents();
+        S_SpellCast::SetupEvents();
     }
     if (message->type == SKSE::MessagingInterface::kNewGame ||
         message->type == SKSE::MessagingInterface::kPostLoadGame) {
