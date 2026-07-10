@@ -24,6 +24,17 @@ namespace Utils {
     }
 
     template <typename T>
+    void FillSet(const nlohmann::json_abi_v3_12_0::json& data, std::unordered_set<T>& a_set) {
+        if (data.is_array()) {
+            for (auto& item : data) {
+                a_set.insert(item.get<T>());
+            }
+        } else {
+            a_set.insert(data.get<T>());
+        }
+    }
+
+    template <typename T>
     bool fillFormsArray(const nlohmann::json_abi_v3_12_0::json& data, std::vector<T*>& arr) {
         if (data.is_array()) {
             for (auto& item : data) {

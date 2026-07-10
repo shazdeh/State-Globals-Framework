@@ -1,0 +1,122 @@
+#pragma once
+
+namespace S_SpellCast {
+    struct Rule {
+        std::unordered_set<int> formTypes;
+        std::unordered_set<TESForm*> forms;
+        std::vector<BGSKeyword*> keywords;
+        std::vector<BGSKeyword*> magicEffectKeywords;
+        std::unordered_set<EffectSetting*> magicEffects;
+        bool keywordMatchAll = false;
+    };
+
+    std::unordered_map<TESGlobal*, Rule> globals;
+
+    BSTArray<RE::Effect*> GetEffects(TESForm* a_form) {
+        switch (a_form->GetFormType()) {
+            case FormType::Spell:
+                return a_form->As<SpellItem>()->effects;
+
+            case FormType::AlchemyItem:
+                return a_form->As<AlchemyItem>()->effects;
+
+            case FormType::Ingredient:
+                return a_form->As<IngredientItem>()->effects;
+
+            case FormType::Scroll:
+                return a_form->As<ScrollItem>()->effects;
+
+            case FormType::Enchantment:
+                return a_form->As<EnchantmentItem>()->effects;
+        }
+        return {};
+    }
+
+    bool FormHasAnyMagicEffect(TESForm* a_form, std::unordered_set<EffectSetting*> a_effectsSet) {
+        BSTArray<RE::Effect*> effects = GetEffects(a_form);
+
+        if (effects.size()) {
+            for (Effect* effect : effects) {
+                if (a_effectsSet.contains(effect->baseEffect)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    bool FormHasMagicEffectKeyword(TESForm* a_form, std::vector<BGSKeyword*> a_keywords) {
+        BSTArray<RE::Effect*> effects = GetEffects(a_form);
+        if (effects.size()) {
+            for (Effect* effect : effects) {
+                if (effect->baseEffect->HasKeywordInArray(a_keywords, false)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    void Process(FormID spellID) {
+        TESForm* spell = TESForm::LookupByID(spellID);
+        for (auto& item : globals) {
+            if (!item.second.formTypes.empty() &&
+                !item.second.formTypes.contains(std::to_underlying(spell->GetFormType())))
+                continue;
+            if (!item.second.keywords.empty() &&
+                !spell->HasKeywordInArray(item.second.keywords, item.second.keywordMatchAll))
+                continue;
+            if (!item.second.forms.empty() && !item.second.forms.contains(spell)) continue;
+            if (!item.second.magicEffects.empty() && !FormHasAnyMagicEffect(spell, item.second.magicEffects)) continue;
+            if (!item.second.magicEffectKeywords.empty() &&
+                !FormHasMagicEffectKeyword(spell, item.second.magicEffectKeywords))
+                continue;
+
+            item.first->value += 1;
+        }
+    }
+
+    class EventSink : public BSTEventSink<TESSpellCastEvent> {
+        BSEventNotifyControl ProcessEvent(const TESSpellCastEvent* event, BSTEventSource<TESSpellCastEvent>*) {
+            if (!event->object) return BSEventNotifyControl::kContinue;
+            auto ref = event->object.get();
+            if (ref && ref->IsPlayerRef()) {
+                Process(event->spell);
+            }
+            return BSEventNotifyControl::kContinue;
+        }
+    };
+
+    static std::optional<Rule> parseJSON(const nlohmann::json_abi_v3_12_0::json& item) {
+        auto& data = item.at("spellcast");
+        Rule rule;
+        if (data.contains("formType")) {
+            Utils::FillSet<int>(data.at("formType"), rule.formTypes);
+        }
+        if (data.contains("form")) {
+            Utils::FillFormsSet(data.at("form"), rule.forms);
+        }
+        if (data.contains("magicEffect")) {
+            Utils::FillFormsSet(data.at("magicEffect"), rule.magicEffects);
+        }
+        if (data.contains("keyword")) {
+            if (!Utils::fillFormsArray(data.at("keyword"), rule.keywords)) return {};
+            if (data.contains("keywordMatchAll")) {
+                rule.keywordMatchAll = data.at("keywordMatchAll").get<bool>();
+            }
+        }
+        if (data.contains("magicEffectKeyword")) {
+            if (!Utils::fillFormsArray(data.at("magicEffectKeyword"), rule.magicEffectKeywords)) return {};
+        }
+        return rule;
+    }
+
+    void SetupEvents() {
+        if (!globals.empty()) {
+            static EventSink g_sink;
+            ScriptEventSourceHolder::GetSingleton()->AddEventSink<TESSpellCastEvent>(&g_sink);
+        }
+    }
+}

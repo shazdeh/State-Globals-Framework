@@ -7,6 +7,7 @@ namespace S_Inventory {
     struct Rule {
         std::unordered_set<TESBoundObject*> excludes;
         std::vector<BGSKeyword*> keywords;
+        std::unordered_set<int> formTypes;
         bool keywordMatchAll = false;
         bool unique = false;
         std::optional<bool> isEnchanted;
@@ -20,6 +21,9 @@ namespace S_Inventory {
         for (auto& item : globals) {
             float value = 0.0f;
             for (auto& [inventoryItem, data] : inventory) {
+                if (!item.second.formTypes.empty() &&
+                    !item.second.formTypes.contains(std::to_underlying(inventoryItem->GetFormType())))
+                    continue;
                 if (!item.second.excludes.empty() && item.second.excludes.contains(inventoryItem)) continue;
                 if (!item.second.keywords.empty() &&
                     !inventoryItem->HasKeywordInArray(item.second.keywords, item.second.keywordMatchAll))
@@ -55,6 +59,9 @@ namespace S_Inventory {
     static std::optional<Rule> parseJSON(const nlohmann::json_abi_v3_12_0::json& item) {
         auto& data = item.at("inventory");
         Rule rule;
+        if (data.contains("formType")) {
+            Utils::FillSet<int>(data.at("formType"), rule.formTypes);
+        }
         if (data.contains("unique")) {
             rule.unique = data.at("unique").get<bool>();
         }

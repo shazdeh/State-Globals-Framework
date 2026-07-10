@@ -6,11 +6,9 @@
 #include "Kills.h"
 #include "MagicEffect.h"
 #include "Inventory.h"
+#include "Magic.h"
 
 //#include "ClibUtil/editorID.hpp"
-
-
-
 
 static void ParseData(const json& data) {
     for (const auto& item : data) {
