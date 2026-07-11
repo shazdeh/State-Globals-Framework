@@ -4,14 +4,20 @@ namespace S_Inventory {
     bool bQueued;
     FormID playerID = 0x14;
 
+    enum ValueType {
+        Count = 0,
+        Weight = 1
+    };
+
     struct Rule {
         std::unordered_set<TESBoundObject*> excludes;
         std::vector<BGSKeyword*> keywords;
         std::unordered_set<int> formTypes;
-        bool keywordMatchAll = false;
-        bool unique = false;
         std::optional<bool> isEnchanted;
         std::optional<bool> isStolen;
+        ValueType valueType = ValueType::Count;
+        bool keywordMatchAll = false;
+        bool unique = false;
     };
 
     std::unordered_map<TESGlobal*, Rule> globals;
@@ -34,10 +40,11 @@ namespace S_Inventory {
                 if (item.second.isStolen.has_value() && !!data.second->GetOwner() != item.second.isStolen.value())
                     continue;
 
-                if (item.second.unique) {
-                    value += 1;
+                int count = item.second.unique ? 1 : data.first;
+                if (item.second.valueType == ValueType::Weight) {
+                    value += data.second.get()->GetWeight() * count;
                 } else {
-                    value += data.first;
+                    value += count;
                 }
             }
             item.first->value = value;
@@ -79,6 +86,12 @@ namespace S_Inventory {
         }
         if (data.contains("stolen")) {
             rule.isStolen = data.at("stolen").get<bool>();
+        }
+        if (data.contains("valueType")) {
+            std::string_view valueType = data.at("valueType").get<std::string_view>();
+            if (valueType == "weight"sv) {
+                rule.valueType = ValueType::Weight;
+            }
         }
         return rule;
     }
