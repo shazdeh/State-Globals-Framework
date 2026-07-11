@@ -8,6 +8,7 @@ namespace S_SpellCast {
         std::vector<BGSKeyword*> magicEffectKeywords;
         std::unordered_set<EffectSetting*> magicEffects;
         bool keywordMatchAll = false;
+        float mod = 1.0f;
     };
 
     std::unordered_map<TESGlobal*, Rule> globals;
@@ -27,7 +28,11 @@ namespace S_SpellCast {
                 !Utils::FormHasMagicEffectKeyword(spell, item.second.magicEffectKeywords))
                 continue;
 
-            item.first->value += 1;
+            if (item.second.mod == 0.0f) {
+                item.first->value = 0;
+            } else {
+                item.first->value += item.second.mod;
+            }
         }
     }
 
@@ -62,6 +67,9 @@ namespace S_SpellCast {
         }
         if (data.contains("magicEffectKeyword")) {
             if (!Utils::fillFormsArray(data.at("magicEffectKeyword"), rule.magicEffectKeywords)) return {};
+        }
+        if (data.contains("mod")) {
+            rule.mod = data.at("mod").get<float>();
         }
         return rule;
     }

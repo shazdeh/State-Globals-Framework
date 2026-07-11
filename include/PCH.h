@@ -2,6 +2,7 @@
 #include "RE/Skyrim.h"
 #include "SKSE/SKSE.h"
 #include "nlohmann/json.hpp"
+#include "CLibUtilsQTR/Ticker.hpp"
 
 namespace logger = SKSE::log;
 using namespace std::literals;

@@ -7,8 +7,11 @@
 #include "MagicEffect.h"
 #include "Inventory.h"
 #include "Magic.h"
+#include "Combat.h"
 
 //#include "ClibUtil/editorID.hpp"
+
+
 
 static void ParseData(const json& data) {
     for (const auto& item : data) {
@@ -53,6 +56,8 @@ static void ParseData(const json& data) {
                 S_SpellCast::globals.insert({global, result.value()});
             }
         }
+
+        S_Combat::parseJSON(item, global);
     }
 }
 
@@ -81,6 +86,7 @@ void OnMessage(SKSE::MessagingInterface::Message* message) {
         S_MagicEffect::SetupEvents();
         S_Inventory::SetupEvents();
         S_SpellCast::SetupEvents();
+        S_Combat::SetupEvents();
     }
     if (message->type == SKSE::MessagingInterface::kNewGame ||
         message->type == SKSE::MessagingInterface::kPostLoadGame) {
