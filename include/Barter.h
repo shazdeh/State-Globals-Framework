@@ -3,6 +3,7 @@
 namespace S_Barter {
     FormID playerID = 0x14;
     FormID goldID = 0xF;
+    Actor* currentVendor = nullptr;
 
     struct Rule {
         TESGlobal* global;
@@ -10,11 +11,11 @@ namespace S_Barter {
         TESForm* vendorFilter = nullptr;
         std::unordered_set<int> formTypes;
         bool unique = false;
-        bool buy = true;
-        bool sell = true;
+        float mod = 1.0f;
     };
 
-    std::vector<Rule> globals;
+    std::vector<Rule> buyGlobals;
+    std::vector<Rule> sellGlobals;
 
     Actor* GetBarteringActor() {
         auto menu = UI::GetSingleton()->GetMenu<BarterMenu>();
@@ -28,19 +29,20 @@ namespace S_Barter {
         return {};
     }
 
-    void Process(bool buy, FormID itemID, int32_t count) {
-        Actor* vendor = GetBarteringActor();
-        if (!vendor) return;
-        for (auto& item : globals) {
-            if ((buy && !item.buy) || (!buy && !item.sell)) continue;
+    void Process(std::vector<Rule>&arr, FormID itemID, int32_t count) {
+        for (auto& item : arr) {
             if (TESForm* form = TESForm::LookupByID(itemID); form) {
                 if (!empty(item.formTypes) && !item.formTypes.contains(std::to_underlying(form->GetFormType())))
                     continue;
                 if (item.formFilter && !Utils::ParseFormFilter(form, item.formFilter)) continue;
-                if (item.vendorFilter && !Utils::ParseActorFilter(vendor, item.vendorFilter)) continue;
+                if (item.vendorFilter && !Utils::ParseActorFilter(currentVendor, item.vendorFilter)) continue;
 
-                if (item.unique) count = 1;
-                item.global->value += count;
+                if (item.mod == 0.0f) {
+                    item.global->value = 0;
+                } else {
+                    if (item.unique) count = 1;
+                    item.global->value += (count * item.mod);
+                }
             }
         }
     }
@@ -50,7 +52,7 @@ namespace S_Barter {
                                           BSTEventSource<TESContainerChangedEvent>*) {
             if (!event || event->baseObj == goldID) return BSEventNotifyControl::kContinue;
             if (event->oldContainer == playerID || event->newContainer == playerID) {
-                Process(event->newContainer == playerID, event->baseObj, event->itemCount);
+                Process(event->newContainer == playerID ? buyGlobals : sellGlobals, event->baseObj, event->itemCount);
             }
             return BSEventNotifyControl::kContinue;
         }
@@ -61,9 +63,13 @@ namespace S_Barter {
         BSEventNotifyControl ProcessEvent(const MenuOpenCloseEvent* event, BSTEventSource<MenuOpenCloseEvent>*) {
             if (event->menuName == BarterMenu::MENU_NAME) {
                 if (event->opening) {
-                    ScriptEventSourceHolder::GetSingleton()->AddEventSink<TESContainerChangedEvent>(&containerSink);
+                    currentVendor = GetBarteringActor();
+                    if (currentVendor) {
+                        ScriptEventSourceHolder::GetSingleton()->AddEventSink<TESContainerChangedEvent>(&containerSink);
+                    }
                 } else {
                     ScriptEventSourceHolder::GetSingleton()->RemoveEventSink<TESContainerChangedEvent>(&containerSink);
+                    currentVendor = nullptr;
                 }
             }
             return BSEventNotifyControl::kContinue;
@@ -71,36 +77,35 @@ namespace S_Barter {
     };
 
     void parseJSON(const nlohmann::json_abi_v3_12_0::json& item, TESGlobal* global) {
-        if (!item.contains("barter")) return;
-        auto& data = item.at("barter");
-        Rule rule;
-        if (data.contains("formType")) {
-            Utils::FillSet<int>(data.at("formType"), rule.formTypes);
-        }
-        if (data.contains("formFilter")) {
-            rule.formFilter = Utils::GetForm<TESForm>(data.at("formFilter").get<std::string>());
-            if (!rule.formFilter) return;
-        }
-        if (data.contains("vendorFilter")) {
-            rule.vendorFilter = Utils::GetForm<TESForm>(data.at("vendorFilter").get<std::string>());
-            if (!rule.vendorFilter) return;
-        }
-        if (data.contains("unique")) {
-            rule.unique = data.at("unique").get<bool>();
-        }
-        if (data.contains("buy")) {
-            rule.buy = data.at("buy").get<bool>();
-        }
-        if (data.contains("sell")) {
-            rule.sell = data.at("sell").get<bool>();
-        }
+        for (std::string_view key : {"buy"sv, "sell"sv}) {
+            if (!item.contains(key)) continue;
+            auto& data = item.at(key);
+            Rule rule;
+            if (data.contains("formType")) {
+                Utils::FillSet<int>(data.at("formType"), rule.formTypes);
+            }
+            if (data.contains("formFilter")) {
+                rule.formFilter = Utils::GetForm<TESForm>(data.at("formFilter").get<std::string>());
+                if (!rule.formFilter) continue;
+            }
+            if (data.contains("vendorFilter")) {
+                rule.vendorFilter = Utils::GetForm<TESForm>(data.at("vendorFilter").get<std::string>());
+                if (!rule.vendorFilter) continue;
+            }
+            if (data.contains("unique")) {
+                rule.unique = data.at("unique").get<bool>();
+            }
+            if (data.contains("mod")) {
+                rule.mod = data.at("mod").get<float>();
+            }
 
-        rule.global = global;
-        globals.push_back(rule);
+            rule.global = global;
+            (key == "buy"sv ? buyGlobals : sellGlobals).push_back(rule);
+        }
     }
 
     void SetupEvents() {
-        if (!globals.empty()) {
+        if (!buyGlobals.empty() || !sellGlobals.empty()) {
             static UISink uiSink;
             UI::GetSingleton()->AddEventSink<MenuOpenCloseEvent>(&uiSink);
         }
