@@ -1,18 +1,20 @@
 #pragma once
 
-namespace Equipment {
+namespace S_Equip {
     bool bQueued;
 
     enum ValueType { Count = 0, Weight = 1 };
 
     struct Rule {
+        TESGlobal* global = nullptr;
+        TESForm* formFilter = nullptr;
         int formType = 0;
         int isStolen = -1;
         int isEnchanted = -1;
         ValueType valueType = ValueType::Count;
     };
 
-    std::unordered_map<TESGlobal*, Rule> globals;
+    std::vector<Rule> globals;
 
     void Process() {
         auto player = PlayerCharacter::GetSingleton();
@@ -20,37 +22,40 @@ namespace Equipment {
 
         for (auto& item : globals) {
             float value = 0;
-            if (item.second.formType == 41) {
+            if (item.formType == 41) {
                 bool states[] = {false, true};
                 for (auto state : states) {
                     if (auto* entryData = player->GetEquippedEntryData(state); entryData) {
                         int isStolen = entryData->GetOwner() ? 1 : 0;
-                        if (item.second.isStolen != -1 && isStolen != item.second.isStolen) continue;
-                        if (item.second.isEnchanted != -1 && entryData->IsEnchanted() != !!item.second.isEnchanted)
+                        if (item.isStolen != -1 && isStolen != item.isStolen) continue;
+                        if (item.isEnchanted != -1 && entryData->IsEnchanted() != !!item.isEnchanted)
+                            continue;
+                        if (item.formFilter && !Utils::ParseFormFilter(entryData->GetObject(), item.formFilter))
                             continue;
 
-                        if (item.second.valueType == ValueType::Count) {
+                        if (item.valueType == ValueType::Count) {
                             value += 1;
                         } else {
                             value += entryData->GetWeight();
                         }
                     }
                 }
-            } else if (item.second.formType == 26) {
+            } else if (item.formType == 26) {
                 for (auto& [inventoryItem, data] : inventory) {
                     if (!inventoryItem->Is(FormType::Armor) || !data.second->IsWorn()) continue;
-                    if (item.second.isStolen != -1 && !!data.second->GetOwner() != item.second.isStolen) continue;
-                    if (item.second.isEnchanted != -1 && data.second->IsEnchanted() != !!item.second.isEnchanted)
-                        continue;
+                    if (item.isStolen != -1 && !!data.second->GetOwner() != item.isStolen) continue;
+                    if (item.isEnchanted != -1 && data.second->IsEnchanted() != !!item.isEnchanted)
+                         continue;
+                    if (item.formFilter && !Utils::ParseFormFilter(inventoryItem, item.formFilter)) continue;
 
-                    if (item.second.valueType == ValueType::Count) {
+                    if (item.valueType == ValueType::Count) {
                         value += 1;
                     } else {
                         value += data.second->GetWeight();
                     }
                 }
             }
-            item.first->value = value;
+            item.global->value = value;
         }
         bQueued = false;
     }
@@ -66,11 +71,16 @@ namespace Equipment {
         }
     };
 
-    static std::optional<Rule> parseJSON(const nlohmann::json_abi_v3_12_0::json& item) {
+    void parseJSON(const nlohmann::json_abi_v3_12_0::json& item, TESGlobal* global) {
+        if (!item.contains("equip")) return;
         auto& data = item.at("equip");
-        if (!data.contains("formType")) return std::nullopt;
+        if (!data.contains("formType")) return;
         Rule rule;
         rule.formType = data.at("formType").get<int>();
+        if (data.contains("formFilter")) {
+            rule.formFilter = Utils::GetForm<TESForm>(data.at("formFilter").get<std::string>());
+            if (!rule.formFilter) return;
+        }
         if (data.contains("stolen")) {
             rule.isStolen = data.at("stolen").get<bool>() ? 1 : 0;
         }
@@ -83,7 +93,8 @@ namespace Equipment {
                 rule.valueType = ValueType::Weight;
             }
         }
-        return rule;
+        rule.global = global;
+        globals.push_back(rule);
     }
 
     void SetupEvents() {

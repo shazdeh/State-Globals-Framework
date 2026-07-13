@@ -6,12 +6,14 @@ namespace S_MagicEffect {
     enum Scope { Current = 0, Lifetime = 1 };
 
     struct Rule {
+        TESGlobal* global = nullptr;
+        TESForm* formFilter = nullptr;
         std::optional<MagicSystem::SpellType> spellType;
         std::unordered_set<MagicItem*> spells;
         bool unique = true;
     };
 
-    std::unordered_map<TESGlobal*, Rule> globals;
+    std::vector<Rule> globals;
 
     void Process() {
         auto* mt = PlayerCharacter::GetSingleton()->AsMagicTarget();
@@ -22,16 +24,16 @@ namespace S_MagicEffect {
             std::unordered_set<MagicItem*> visited;
             for (auto* effect : *effects) {
                 if (!effect || !effect->spell) continue;
-                if (item.second.spellType && effect->spell->GetSpellType() != item.second.spellType) continue;
-                if (!item.second.spells.empty() && !item.second.spells.contains(effect->spell)) continue;
-                if (item.second.unique) {
+                if (item.spellType && effect->spell->GetSpellType() != item.spellType) continue;
+                if (!item.spells.empty() && !item.spells.contains(effect->spell)) continue;
+                if (item.unique) {
                     if (visited.contains(effect->spell)) continue;
                     visited.insert(effect->spell);
                 }
 
                 value += 1;
             }
-            item.first->value = value;
+            item.global->value = value;
         }
         bQueued = false;
     }
@@ -47,17 +49,22 @@ namespace S_MagicEffect {
         }
     };
 
-    static std::optional<Rule> parseJSON(const nlohmann::json_abi_v3_12_0::json& item) {
+    void parseJSON(const nlohmann::json_abi_v3_12_0::json& item, TESGlobal* global) {
+        if (!item.contains("magiceffect")) return;
         auto& data = item.at("magiceffect");
         Rule rule;
         if (data.contains("spellType")) {
             rule.spellType = static_cast<MagicSystem::SpellType>(data.at("spellType").get<int>());
         }
         if (data.contains("spell")) {
-            if (!Utils::FillFormsSet(data.at("spell"), rule.spells)) return {};
-            ConsoleLog::GetSingleton()->Print(fmt::format("count of spells: {}", rule.spells.size()).c_str());
+            if (!Utils::FillFormsSet(data.at("spell"), rule.spells)) return;
         }
-        return rule;
+        if (data.contains("formFilter")) {
+            rule.formFilter = Utils::GetForm<TESForm>(data.at("formFilter").get<std::string>());
+            if (!rule.formFilter) return;
+        }
+        rule.global = global;
+        globals.push_back(rule);
     }
 
     void SetupEvents() {

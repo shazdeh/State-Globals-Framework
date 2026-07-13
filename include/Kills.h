@@ -1,56 +1,40 @@
 #pragma once
 
-namespace Kills {
+namespace S_Kills {
     enum ValueType { Counter = 0, TargetLevel = 1, TargetLevelDiff = 2 };
 
     struct Rule {
-        std::vector<TESFaction*> factions;
-        std::vector<TESRace*> races;
+        TESGlobal* global = nullptr;
+        TESForm* formFilter = nullptr;
         BGSPerk* conditionPerk = nullptr;
         int isCommanded = -1;
         ValueType type = ValueType::Counter;
         float mod = 1.0f;
     };
 
-    std::unordered_map<TESGlobal*, Rule> globals;
-
-    bool IsInAnyFaction(Actor* a_actor, std::vector<TESFaction*>& a_factions) {
-        for (auto* faction : a_factions) {
-            if (a_actor->IsInFaction(faction)) return true;
-        }
-        return false;
-    }
-
-    bool IsAnyRace(Actor* a_actor, std::vector<TESRace*>& a_races) {
-        auto victimRace = a_actor->GetRace();
-        for (auto* race : a_races) {
-            if (race == victimRace) return true;
-        }
-        return false;
-    }
+    std::vector<Rule> globals;
 
     void Process(Actor* victim) {
         for (auto& item : globals) {
-            if (item.second.isCommanded != -1 && victim->IsCommandedActor() != item.second.isCommanded) continue;
-            if (!item.second.factions.empty() && !IsInAnyFaction(victim, item.second.factions)) continue;
-            if (!item.second.races.empty() && !IsAnyRace(victim, item.second.races)) continue;
-            if (item.second.conditionPerk &&
-                !item.second.conditionPerk->perkConditions.IsTrue(PlayerCharacter::GetSingleton(), victim))
+            if (item.isCommanded != -1 && victim->IsCommandedActor() != item.isCommanded) continue;
+            if (item.formFilter && !Utils::ParseActorFilter(victim, item.formFilter)) continue;
+            if (item.conditionPerk &&
+                !item.conditionPerk->perkConditions.IsTrue(PlayerCharacter::GetSingleton(), victim))
                 continue;
 
-            switch (item.second.type) {
+            switch (item.type) {
                 case ValueType::Counter:
-                    if (item.second.mod == 0) {
-                        item.first->value = 0;
+                    if (item.mod == 0) {
+                        item.global->value = 0;
                     } else {
-                        item.first->value += item.second.mod;
+                        item.global->value += item.mod;
                     }
                     break;
                 case ValueType::TargetLevel:
-                    item.first->value = victim->GetLevel();
+                    item.global->value = victim->GetLevel();
                     break;
                 case ValueType::TargetLevelDiff:
-                    item.first->value = PlayerCharacter::GetSingleton()->GetLevel() - victim->GetLevel();
+                    item.global->value = PlayerCharacter::GetSingleton()->GetLevel() - victim->GetLevel();
                     break;
             }
         }
@@ -70,19 +54,18 @@ namespace Kills {
         }
     };
 
-    static std::optional<Rule> parseJSON(const nlohmann::json_abi_v3_12_0::json& item) {
+    void parseJSON(const nlohmann::json_abi_v3_12_0::json& item, TESGlobal* global) {
+        if (!item.contains("kill")) return;
         auto& data = item.at("kill");
         Rule rule;
-        if (data.contains("faction")) {
-            if (!Utils::fillFormsArray(data.at("faction"), rule.factions)) return {};
-        }
-        if (data.contains("race")) {
-            if (!Utils::fillFormsArray(data.at("race"), rule.races)) return {};
+        if (data.contains("formFilter")) {
+            rule.formFilter = Utils::GetForm<TESForm>(data.at("formFilter").get<std::string>());
+            if (!rule.formFilter) return;
         }
         if (data.contains("conditionPerk")) {
             rule.conditionPerk = Utils::GetForm<BGSPerk>(data.at("conditionPerk").get<std::string>());
             if (!rule.conditionPerk) {
-                return {};
+                return;
             }
         }
         if (data.contains("commanded")) {
@@ -99,7 +82,8 @@ namespace Kills {
         if (data.contains("mod")) {
             rule.mod = data.at("mod").get<float>();
         }
-        return rule;
+        rule.global = global;
+        globals.push_back(rule);
     }
 
     void SetupEvents() {

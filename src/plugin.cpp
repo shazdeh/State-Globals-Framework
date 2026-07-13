@@ -1,4 +1,5 @@
 #include "logger.h"
+#undef GetObject
 #include <unordered_set>
 #include "Utils.h"
 #include "SpellLearn.h"
@@ -8,10 +9,11 @@
 #include "Inventory.h"
 #include "Magic.h"
 #include "Combat.h"
-
-//#include "ClibUtil/editorID.hpp"
-
-
+#include "Perks.h"
+#include "Barter.h"
+#include "Proximity.h"
+#include "Read.h"
+#include "Hits.h"
 
 static void ParseData(const json& data) {
     for (const auto& item : data) {
@@ -20,44 +22,18 @@ static void ParseData(const json& data) {
         TESGlobal* global = Utils::GetForm<TESGlobal>(item.at("global").get<std::string>());
         if (!global) continue;
 
-        if (item.contains("learnspell")) {
-            auto result = S_SpellLearn::parseJSON(item);
-            if (result.has_value()) {
-                S_SpellLearn::globals.insert({global, result.value()});
-            }
-        }
-        if (item.contains("equip")) {
-            auto result = Equipment::parseJSON(item);
-            if (result.has_value()) {
-                Equipment::globals.insert({global, result.value()});
-            }
-        }
-        if (item.contains("kill")) {
-            auto result = Kills::parseJSON(item);
-            if (result.has_value()) {
-                Kills::globals.insert({global, result.value()});
-            }
-        }
-        if (item.contains("magiceffect")) {
-            auto result = S_MagicEffect::parseJSON(item);
-            if (result.has_value()) {
-                S_MagicEffect::globals.insert({global, result.value()});
-            }
-        }
-        if (item.contains("inventory")) {
-            auto result = S_Inventory::parseJSON(item);
-            if (result.has_value()) {
-                S_Inventory::globals.insert({global, result.value()});
-            }
-        }
-        if (item.contains("spellcast")) {
-            auto result = S_SpellCast::parseJSON(item);
-            if (result.has_value()) {
-                S_SpellCast::globals.insert({global, result.value()});
-            }
-        }
-
+        S_Magic::parseJSON(item, global);
+        S_Inventory::parseJSON(item, global);
+        S_MagicEffect::parseJSON(item, global);
+        S_Equip::parseJSON(item, global);
+        S_Kills::parseJSON(item, global);
+        S_SpellLearn::parseJSON(item, global);
         S_Combat::parseJSON(item, global);
+        S_Perks::parseJSON(item, global);
+        S_Hits::parseJSON(item, global);
+        S_Barter::parseJSON(item, global);
+        S_Proximity::parseJSON(item, global);
+        S_Read::parseJSON(item, global);
     }
 }
 
@@ -80,13 +56,18 @@ void OnMessage(SKSE::MessagingInterface::Message* message) {
     if (message->type == SKSE::MessagingInterface::kDataLoaded) {
         BuildRules();
         // ConsoleLog::GetSingleton()->Print(fmt::format("Size of kills map: {}", Kills::globals.size()).c_str());
-        Equipment::SetupEvents();
-        Kills::SetupEvents();
+        S_Equip::SetupEvents();
+        S_Kills::SetupEvents();
         S_SpellLearn::SetupEvents();
         S_MagicEffect::SetupEvents();
         S_Inventory::SetupEvents();
-        S_SpellCast::SetupEvents();
+        S_Magic::SetupEvents();
         S_Combat::SetupEvents();
+        S_Perks::SetupEvents();
+        S_Hits::SetupEvents();
+        S_Barter::SetupEvents();
+        S_Proximity::SetupEvents();
+        S_Read::SetupEvents();
     }
     if (message->type == SKSE::MessagingInterface::kNewGame ||
         message->type == SKSE::MessagingInterface::kPostLoadGame) {

@@ -10,44 +10,42 @@ namespace S_Inventory {
     };
 
     struct Rule {
-        std::unordered_set<TESBoundObject*> excludes;
-        std::vector<BGSKeyword*> keywords;
+        TESGlobal* global = nullptr;
+        TESForm* formFilter = nullptr;
+        TESForm* formExcludeFilter = nullptr;
         std::unordered_set<int> formTypes;
         std::optional<bool> isEnchanted;
         std::optional<bool> isStolen;
         ValueType valueType = ValueType::Count;
-        bool keywordMatchAll = false;
         bool unique = false;
     };
 
-    std::unordered_map<TESGlobal*, Rule> globals;
+    std::vector<Rule> globals;
 
     void Process() {
         auto inventory = PlayerCharacter::GetSingleton()->GetInventory();
         for (auto& item : globals) {
             float value = 0.0f;
             for (auto& [inventoryItem, data] : inventory) {
-                if (!item.second.formTypes.empty() &&
-                    !item.second.formTypes.contains(std::to_underlying(inventoryItem->GetFormType())))
+                if (!item.formTypes.empty() &&
+                    !item.formTypes.contains(std::to_underlying(inventoryItem->GetFormType())))
                     continue;
-                if (!item.second.excludes.empty() && item.second.excludes.contains(inventoryItem)) continue;
-                if (!item.second.keywords.empty() &&
-                    !inventoryItem->HasKeywordInArray(item.second.keywords, item.second.keywordMatchAll))
+                if (item.formExcludeFilter && Utils::ParseFormFilter(inventoryItem, item.formExcludeFilter)) continue;
+                if (item.formFilter && !Utils::ParseFormFilter(inventoryItem, item.formFilter)) continue;
+                if (item.isEnchanted.has_value() &&
+                    data.second->IsEnchanted() != item.isEnchanted.value())
                     continue;
-                if (item.second.isEnchanted.has_value() &&
-                    data.second->IsEnchanted() != item.second.isEnchanted.value())
-                    continue;
-                if (item.second.isStolen.has_value() && !!data.second->GetOwner() != item.second.isStolen.value())
+                if (item.isStolen.has_value() && !!data.second->GetOwner() != item.isStolen.value())
                     continue;
 
-                int count = item.second.unique ? 1 : data.first;
-                if (item.second.valueType == ValueType::Weight) {
+                int count = item.unique ? 1 : data.first;
+                if (item.valueType == ValueType::Weight) {
                     value += data.second.get()->GetWeight() * count;
                 } else {
                     value += count;
                 }
             }
-            item.first->value = value;
+            item.global->value = value;
         }
         bQueued = false;
     }
@@ -63,7 +61,8 @@ namespace S_Inventory {
         }
     };
 
-    static std::optional<Rule> parseJSON(const nlohmann::json_abi_v3_12_0::json& item) {
+    void parseJSON(const nlohmann::json_abi_v3_12_0::json& item, TESGlobal* global) {
+        if (!item.contains("inventory")) return;
         auto& data = item.at("inventory");
         Rule rule;
         if (data.contains("formType")) {
@@ -72,14 +71,13 @@ namespace S_Inventory {
         if (data.contains("unique")) {
             rule.unique = data.at("unique").get<bool>();
         }
-        if (data.contains("exclude")) {
-            if (!Utils::FillFormsSet(data.at("exclude"), rule.excludes)) return {};
+        if (data.contains("formFilter")) {
+            rule.formFilter = Utils::GetForm<TESForm>(data.at("formFilter").get<std::string>());
+            if (!rule.formFilter) return;
         }
-        if (data.contains("keyword")) {
-            if (!Utils::fillFormsArray(data.at("keyword"), rule.keywords)) return {};
-            if (data.contains("keywordMatchAll")) {
-                rule.keywordMatchAll = data.at("keywordMatchAll").get<bool>();
-            }
+        if (data.contains("formExcludeFilter")) {
+            rule.formExcludeFilter = Utils::GetForm<TESForm>(data.at("formExcludeFilter").get<std::string>());
+            if (!rule.formExcludeFilter) return;
         }
         if (data.contains("enchanted")) {
             rule.isEnchanted = data.at("enchanted").get<bool>();
@@ -93,7 +91,8 @@ namespace S_Inventory {
                 rule.valueType = ValueType::Weight;
             }
         }
-        return rule;
+        rule.global = global;
+        globals.push_back(rule);
     }
 
     void SetupEvents() {

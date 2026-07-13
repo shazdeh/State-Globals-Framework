@@ -1,37 +1,33 @@
 #pragma once
 
-namespace S_SpellCast {
+namespace S_Magic {
     struct Rule {
+        TESGlobal* global = nullptr;
+        TESForm* formFilter = nullptr;
         std::unordered_set<int> formTypes;
-        std::unordered_set<TESForm*> forms;
-        std::vector<BGSKeyword*> keywords;
         std::vector<BGSKeyword*> magicEffectKeywords;
         std::unordered_set<EffectSetting*> magicEffects;
-        bool keywordMatchAll = false;
         float mod = 1.0f;
     };
 
-    std::unordered_map<TESGlobal*, Rule> globals;
+    std::vector<Rule> globals;
 
     void Process(FormID spellID) {
         TESForm* spell = TESForm::LookupByID(spellID);
         for (auto& item : globals) {
-            if (!item.second.formTypes.empty() &&
-                !item.second.formTypes.contains(std::to_underlying(spell->GetFormType())))
+            if (!item.formTypes.empty() &&
+                !item.formTypes.contains(std::to_underlying(spell->GetFormType())))
                 continue;
-            if (!item.second.keywords.empty() &&
-                !spell->HasKeywordInArray(item.second.keywords, item.second.keywordMatchAll))
-                continue;
-            if (!item.second.forms.empty() && !item.second.forms.contains(spell)) continue;
-            if (!item.second.magicEffects.empty() && !Utils::FormHasAnyMagicEffect(spell, item.second.magicEffects)) continue;
-            if (!item.second.magicEffectKeywords.empty() &&
-                !Utils::FormHasMagicEffectKeyword(spell, item.second.magicEffectKeywords))
+            if (item.formFilter && !Utils::ParseFormFilter(spell, item.formFilter)) continue;
+            if (!item.magicEffects.empty() && !Utils::FormHasAnyMagicEffect(spell, item.magicEffects)) continue;
+            if (!item.magicEffectKeywords.empty() &&
+                !Utils::FormHasMagicEffectKeyword(spell, item.magicEffectKeywords))
                 continue;
 
-            if (item.second.mod == 0.0f) {
-                item.first->value = 0;
+            if (item.mod == 0.0f) {
+                item.global->value = 0;
             } else {
-                item.first->value += item.second.mod;
+                item.global->value += item.mod;
             }
         }
     }
@@ -47,31 +43,29 @@ namespace S_SpellCast {
         }
     };
 
-    static std::optional<Rule> parseJSON(const nlohmann::json_abi_v3_12_0::json& item) {
+    void parseJSON(const nlohmann::json_abi_v3_12_0::json& item, TESGlobal* global) {
+        if (!item.contains("spellcast")) return;
         auto& data = item.at("spellcast");
         Rule rule;
         if (data.contains("formType")) {
             Utils::FillSet<int>(data.at("formType"), rule.formTypes);
         }
-        if (data.contains("form")) {
-            Utils::FillFormsSet(data.at("form"), rule.forms);
+        if (data.contains("formFilter")) {
+            rule.formFilter = Utils::GetForm<TESForm>(data.at("formFilter").get<std::string>());
+            if (!rule.formFilter) return;
         }
         if (data.contains("magicEffect")) {
             Utils::FillFormsSet(data.at("magicEffect"), rule.magicEffects);
         }
-        if (data.contains("keyword")) {
-            if (!Utils::fillFormsArray(data.at("keyword"), rule.keywords)) return {};
-            if (data.contains("keywordMatchAll")) {
-                rule.keywordMatchAll = data.at("keywordMatchAll").get<bool>();
-            }
-        }
         if (data.contains("magicEffectKeyword")) {
-            if (!Utils::fillFormsArray(data.at("magicEffectKeyword"), rule.magicEffectKeywords)) return {};
+            if (!Utils::fillFormsArray(data.at("magicEffectKeyword"), rule.magicEffectKeywords)) return;
         }
         if (data.contains("mod")) {
             rule.mod = data.at("mod").get<float>();
         }
-        return rule;
+
+        rule.global = global;
+        globals.push_back(rule);
     }
 
     void SetupEvents() {

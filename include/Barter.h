@@ -12,6 +12,8 @@ namespace S_Barter {
         std::unordered_set<int> formTypes;
         bool unique = false;
         float mod = 1.0f;
+        std::optional<float> min;
+        std::optional<float> max;
     };
 
     std::vector<Rule> buyGlobals;
@@ -41,7 +43,12 @@ namespace S_Barter {
                     item.global->value = 0;
                 } else {
                     if (item.unique) count = 1;
-                    item.global->value += (count * item.mod);
+                    float newValue = item.global->value + (count * item.mod);
+                    if (item.max.has_value() && newValue > item.max.value())
+                        newValue = item.max.value();
+                    else if (item.min.has_value() && newValue < item.min.value())
+                        newValue = item.min.value();
+                    item.global->value = newValue;
                 }
             }
         }
@@ -97,6 +104,12 @@ namespace S_Barter {
             }
             if (data.contains("mod")) {
                 rule.mod = data.at("mod").get<float>();
+            }
+            if (item.contains("min")) {
+                rule.min = item.at("min").get<float>();
+            }
+            if (item.contains("max")) {
+                rule.max = item.at("max").get<float>();
             }
 
             rule.global = global;

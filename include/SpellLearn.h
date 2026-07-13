@@ -2,7 +2,8 @@
 
 namespace S_SpellLearn {
     struct Rule {
-        std::vector<BGSKeyword*> keywords;
+        TESGlobal* global = nullptr;
+        TESForm* formFilter = nullptr;
         bool keywordMatchAll = false;
         std::optional<int> skillLevel;
         std::string skillComp = "=";
@@ -10,7 +11,7 @@ namespace S_SpellLearn {
         float mod = 1.0f;
     };
 
-    std::unordered_map<TESGlobal*, Rule> globals;
+    std::vector<Rule> globals;
 
     int GetSpellMinimumSkillLevel(SpellItem* a_spell) {
         if (!a_spell) return 0;
@@ -26,15 +27,13 @@ namespace S_SpellLearn {
         int skillLevel = GetSpellMinimumSkillLevel(spell);
 
         for (auto& item : globals) {
-            if (item.second.skillLevel.has_value() &&
-                !Utils::compare(skillLevel, item.second.skillLevel.value(), item.second.skillComp))
+            if (item.skillLevel.has_value() &&
+                !Utils::compare(skillLevel, item.skillLevel.value(), item.skillComp))
                 continue;
-            if (item.second.av != ActorValue::kNone && assocSkill != item.second.av) continue;
-            if (!item.second.keywords.empty() &&
-                !spell->HasKeywordInArray(item.second.keywords, item.second.keywordMatchAll))
-                continue;
+            if (item.av != ActorValue::kNone && assocSkill != item.av) continue;
+            if (item.formFilter && !Utils::ParseFormFilter(spell, item.formFilter)) continue;
 
-            item.first->value += item.second.mod;
+            item.global->value += item.mod;
         }
     }
 
@@ -43,7 +42,7 @@ namespace S_SpellLearn {
         const auto& all = TESDataHandler::GetSingleton()->GetFormArray<TESObjectBOOK>();
 
         for (auto& item : globals) {
-            item.first->value = 0;
+            item.global->value = 0;
         }
 
         for (auto book : all) {
@@ -64,7 +63,8 @@ namespace S_SpellLearn {
         }
     };
 
-    static std::optional<Rule> parseJSON(const nlohmann::json_abi_v3_12_0::json& item) {
+    void parseJSON(const nlohmann::json_abi_v3_12_0::json& item, TESGlobal* global) {
+        if (!item.contains("learnspell")) return;
         auto& data = item.at("learnspell");
         Rule rule;
         if (data.contains("skillLevel")) {
@@ -77,13 +77,12 @@ namespace S_SpellLearn {
             auto skill = data.at("skill").get<int>();
             rule.av = static_cast<ActorValue>(skill);
         }
-        if (data.contains("keyword")) {
-            if (!Utils::fillFormsArray(data.at("keyword"), rule.keywords)) return {};
-            if (data.contains("keywordMatchAll")) {
-                rule.keywordMatchAll = data.at("keywordMatchAll").get<bool>();
-            }
+        if (data.contains("formFilter")) {
+            rule.formFilter = Utils::GetForm<TESForm>(data.at("formFilter").get<std::string>());
+            if (!rule.formFilter) return;
         }
-        return rule;
+        rule.global = global;
+        globals.push_back(rule);
     };
 
     void SetupEvents() {
