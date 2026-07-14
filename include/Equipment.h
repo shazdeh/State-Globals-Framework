@@ -3,14 +3,15 @@
 namespace S_Equip {
     bool bQueued;
 
-    enum ValueType { Count = 0, Weight = 1 };
+    enum ValueType { Count = 0, Weight = 1, GoldValue = 2 };
 
     struct Rule {
         TESGlobal* global = nullptr;
         TESForm* formFilter = nullptr;
         int formType = 0;
-        int isStolen = -1;
-        int isEnchanted = -1;
+        std::optional<bool> isStolen;
+        std::optional<bool> isEnchanted;
+        std::optional<bool> isPoisoned;
         ValueType valueType = ValueType::Count;
     };
 
@@ -27,14 +28,18 @@ namespace S_Equip {
                 for (auto state : states) {
                     if (auto* entryData = player->GetEquippedEntryData(state); entryData) {
                         int isStolen = entryData->GetOwner() ? 1 : 0;
-                        if (item.isStolen != -1 && isStolen != item.isStolen) continue;
-                        if (item.isEnchanted != -1 && entryData->IsEnchanted() != !!item.isEnchanted)
+                        if (item.isStolen.has_value() && isStolen != item.isStolen.value()) continue;
+                        if (item.isEnchanted.has_value() && entryData->IsEnchanted() != item.isEnchanted.value())
+                            continue;
+                        if (item.isPoisoned.has_value() && entryData->IsPoisoned() != item.isPoisoned.value())
                             continue;
                         if (item.formFilter && !Utils::ParseFormFilter(entryData->GetObject(), item.formFilter))
                             continue;
 
                         if (item.valueType == ValueType::Count) {
                             value += 1;
+                        } else if(item.valueType == ValueType::GoldValue) {
+                            value += entryData->GetObject()->GetGoldValue();
                         } else {
                             value += entryData->GetWeight();
                         }
@@ -43,13 +48,15 @@ namespace S_Equip {
             } else if (item.formType == 26) {
                 for (auto& [inventoryItem, data] : inventory) {
                     if (!inventoryItem->Is(FormType::Armor) || !data.second->IsWorn()) continue;
-                    if (item.isStolen != -1 && !!data.second->GetOwner() != item.isStolen) continue;
-                    if (item.isEnchanted != -1 && data.second->IsEnchanted() != !!item.isEnchanted)
+                    if (item.isStolen.has_value() && !!data.second->GetOwner() != item.isStolen.value()) continue;
+                    if (item.isEnchanted.has_value() && data.second->IsEnchanted() != item.isEnchanted.value())
                          continue;
                     if (item.formFilter && !Utils::ParseFormFilter(inventoryItem, item.formFilter)) continue;
 
                     if (item.valueType == ValueType::Count) {
                         value += 1;
+                    } else if (item.valueType == ValueType::GoldValue) {
+                        value += inventoryItem->GetGoldValue();
                     } else {
                         value += data.second->GetWeight();
                     }
@@ -91,6 +98,8 @@ namespace S_Equip {
             auto valueType = data.at("valueType").get<std::string_view>();
             if (valueType == "weight"sv) {
                 rule.valueType = ValueType::Weight;
+            } else if (valueType == "value"sv) {
+                rule.valueType = ValueType::GoldValue;
             }
         }
         rule.global = global;

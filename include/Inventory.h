@@ -6,7 +6,8 @@ namespace S_Inventory {
 
     enum ValueType {
         Count = 0,
-        Weight = 1
+        Weight = 1,
+        GoldValue = 2
     };
 
     struct Rule {
@@ -41,6 +42,8 @@ namespace S_Inventory {
                 int count = item.unique ? 1 : data.first;
                 if (item.valueType == ValueType::Weight) {
                     value += data.second.get()->GetWeight() * count;
+                } else if (item.valueType == ValueType::GoldValue) {
+                        value += data.second.get()->GetObject()->GetGoldValue() * count;
                 } else {
                     value += count;
                 }
@@ -89,6 +92,8 @@ namespace S_Inventory {
             std::string_view valueType = data.at("valueType").get<std::string_view>();
             if (valueType == "weight"sv) {
                 rule.valueType = ValueType::Weight;
+            } else if (valueType == "value"sv) {
+                rule.valueType = ValueType::GoldValue;
             }
         }
         rule.global = global;
