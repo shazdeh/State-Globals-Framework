@@ -119,23 +119,6 @@ namespace Utils {
         return false;
     }
 
-    bool ParseFormFilter(TESForm* a_form, TESForm* a_filter) {
-        if (a_filter == a_form) return true;
-        if (a_filter->GetFormType() == FormType::FormList) {
-            auto list = a_filter->As<BGSListForm>();
-            if (list->ContainsOnlyType(FormType::Keyword)) {
-                return a_form->HasKeywordInList(list, false);
-            } else {
-                return list->HasForm(a_form);
-            }
-        } else if (a_filter->GetFormType() == FormType::Keyword) {
-            auto keyword = a_filter->As<BGSKeyword>();
-            return a_form->HasKeywordInArray({keyword}, true);
-        }
-
-        return false;
-    }
-
     bool MatchLocation(BGSLocation* current, BGSLocation* location) {
         while (current) {
             if (current == location) return true;
@@ -157,18 +140,38 @@ namespace Utils {
         return is;
     }
 
-    bool ActorIsInAnyLocationInList(Actor* a_actor, BGSListForm* a_list) {
+    bool MatchLocationList(BGSLocation* a_location, BGSListForm* a_list) {
         bool is = false;
-        auto currentLocation = a_actor->GetCurrentLocation();
-        a_list->ForEachForm([currentLocation, &is](TESForm* form) {
+        a_list->ForEachForm([a_location, &is](TESForm* form) {
             auto location = form->As<BGSLocation>();
-            if (location && MatchLocation(currentLocation, location)) {
+            if (location && MatchLocation(a_location, location)) {
                 is = true;
                 return BSContainer::ForEachResult::kStop;
             }
             return BSContainer::ForEachResult::kContinue;
         });
         return is;
+    }
+
+    bool ParseFormFilter(TESForm* a_form, TESForm* a_filter) {
+        if (a_filter == a_form) return true;
+        if (a_filter->GetFormType() == FormType::FormList) {
+            auto list = a_filter->As<BGSListForm>();
+            if (list->ContainsOnlyType(FormType::Keyword)) {
+                return a_form->HasKeywordInList(list, false);
+            } else if (a_form->Is(FormType::Location) && list->ContainsOnlyType(FormType::Location)) {
+                return MatchLocationList(a_form->As<BGSLocation>(), list);
+            } else {
+                return list->HasForm(a_form);
+            }
+        } else if (a_filter->GetFormType() == FormType::Keyword) {
+            auto keyword = a_filter->As<BGSKeyword>();
+            return a_form->HasKeywordInArray({keyword}, true);
+        } else if (a_form->Is(FormType::Location) && a_filter->Is(FormType::Location)) {
+            return MatchLocation(a_form->As<BGSLocation>(), a_filter->As<BGSLocation>());
+        }
+
+        return false;
     }
 
     // a_filter can be: TESActor, BGSKeyword, TESFaction, BGSLocation
@@ -184,7 +187,8 @@ namespace Utils {
                 } else if (list->ContainsOnlyType(FormType::Faction)) {
                     return ActorIsInAnyFactionInList(a_actor, list);
                 } else if (list->ContainsOnlyType(FormType::Location)) {
-                    return ActorIsInAnyLocationInList(a_actor, list);
+                    auto currentLocation = a_actor->GetCurrentLocation();
+                    return MatchLocationList(currentLocation, list);
                 } else {
                     return list->HasForm(a_actor);
                 }

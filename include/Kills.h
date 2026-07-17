@@ -7,7 +7,7 @@ namespace S_Kills {
         TESGlobal* global = nullptr;
         TESForm* formFilter = nullptr;
         BGSPerk* conditionPerk = nullptr;
-        int isCommanded = -1;
+        std::optional<bool> isCommanded;
         ValueType type = ValueType::Counter;
         float mod = 1.0f;
     };
@@ -16,7 +16,7 @@ namespace S_Kills {
 
     void Process(Actor* victim) {
         for (auto& item : globals) {
-            if (item.isCommanded != -1 && victim->IsCommandedActor() != item.isCommanded) continue;
+            if (item.isCommanded.has_value() && victim->IsCommandedActor() != item.isCommanded) continue;
             if (item.formFilter && !Utils::ParseActorFilter(victim, item.formFilter)) continue;
             if (item.conditionPerk &&
                 !item.conditionPerk->perkConditions.IsTrue(PlayerCharacter::GetSingleton(), victim))
@@ -34,7 +34,7 @@ namespace S_Kills {
                     item.global->value = victim->GetLevel();
                     break;
                 case ValueType::TargetLevelDiff:
-                    item.global->value = PlayerCharacter::GetSingleton()->GetLevel() - victim->GetLevel();
+                    item.global->value = static_cast<float>(PlayerCharacter::GetSingleton()->GetLevel() - victim->GetLevel());
                     break;
             }
         }
@@ -69,7 +69,7 @@ namespace S_Kills {
             }
         }
         if (data.contains("commanded")) {
-            rule.isCommanded = data.at("commanded").get<bool>() ? 1 : 0;
+            rule.isCommanded = data.at("commanded").get<bool>();
         }
         if (data.contains("value")) {
             auto value = data.at("value").get<std::string>();

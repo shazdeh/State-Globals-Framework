@@ -14,6 +14,7 @@ namespace S_Magic {
 
     void Process(FormID spellID) {
         TESForm* spell = TESForm::LookupByID(spellID);
+        // ConsoleLog::GetSingleton()->Print(fmt::format("Spell ID: {:x}", spell->GetFormID()).c_str());
         for (auto& item : globals) {
             if (!item.formTypes.empty() &&
                 !item.formTypes.contains(std::to_underlying(spell->GetFormType())))

@@ -4,7 +4,7 @@ namespace S_Hits {
     struct HitData {
         bool process = false;
         TESObjectREFR* target;
-        FormID source;
+        TESForm* source = nullptr;
         FormID projectile;
         REX::EnumSet<TESHitEvent::Flag, std::uint8_t> flags;
     };
@@ -17,6 +17,7 @@ namespace S_Hits {
 
     struct Rule {
         TESGlobal* global = nullptr;
+        TESForm* sourceFilter = nullptr;
         std::optional<bool> sameTarget;
         bool actorsOnly = true;
         bool ignoreDead = true;
@@ -25,11 +26,19 @@ namespace S_Hits {
         std::optional<bool> bashAttack;
         std::optional<bool> blocked;
         bool resetOnMismatchHit = false;
-        float mod = 1.0f;
+        ValueMod mod{};
     };
 
     std::vector<Rule> hitGlobals;
     std::vector<Rule> hitTakenGlobals;
+
+    TESForm* GetSourceForm(FormID sourceID) {
+        auto form = TESForm::LookupByID(sourceID);
+        if (form->Is(FormType::Enchantment)) {
+            // we need to find the weapon
+        }
+        return form;
+    }
 
     void _Process(std::vector<Rule>& arr, HitData& hit, TESObjectREFR* lastTarget) {
         for (auto& item : arr) {
@@ -56,6 +65,11 @@ namespace S_Hits {
             checkFlag(item.bashAttack, TESHitEvent::Flag::kBashAttack);
             checkFlag(item.blocked, TESHitEvent::Flag::kHitBlocked);
 
+            if (item.sourceFilter && !Utils::ParseFormFilter(hit.source, item.sourceFilter)) {
+                matches = false;
+                if (item.resetOnMismatchHit) reset = true;
+            }
+
             if (item.sameTarget.has_value()) {
                 if (lastTarget && (hit.target == lastTarget) != *item.sameTarget) {
                     matches = false;
@@ -63,22 +77,24 @@ namespace S_Hits {
                 }
             }
 
-            if (reset) item.global->value = 0;
-
-            if (!matches) continue;
-
-            if (item.mod == 0)
-                item.global->value = 0;
-            else
-                item.global->value += item.mod;
+            if (reset)
+                UpdateGlobalValue(item.global, item.mod, true);
+            else if (matches)
+                UpdateGlobalValue(item.global, item.mod, false);
         }
     }
 
     void Process() {
         if (hitCache.process) {
             _Process(hitGlobals, hitCache, lastHitTarget);
+            if (lastHitTarget && lastHitTarget->IsActor()) {
+                lastHitTarget->As<Actor>()->RemoveSpell(LastHitSpell);
+            }
             hitCache.process = false;
             lastHitTarget = hitCache.target;
+            if (lastHitTarget->IsActor()) {
+                lastHitTarget->As<Actor>()->AddSpell(LastHitSpell);
+            }
         }
         if (hitTakenCache.process) {
             _Process(hitTakenGlobals, hitTakenCache, lastHitTakenTarget);
@@ -88,7 +104,9 @@ namespace S_Hits {
         bQueued = false;
     }
 
-    class EventSink : public BSTEventSink<TESHitEvent>, public BSTEventSink<CriticalHit::Event> {
+    class EventSink : public BSTEventSink<TESHitEvent>,
+                      public BSTEventSink<CriticalHit::Event>,
+                      public BSTEventSink < TESCellAttachDetachEvent> {
         BSEventNotifyControl ProcessEvent(const CriticalHit::Event* event, BSTEventSource<CriticalHit::Event>*) {
             ConsoleLog::GetSingleton()->Print(fmt::format("Crit hit, sneak: {}", event->sneakHit).c_str());
             return BSEventNotifyControl::kContinue;
@@ -99,14 +117,16 @@ namespace S_Hits {
             auto target = event->target.get();
             if (cause && target) {
                 if (cause->IsPlayerRef()) {
+                    auto av = target->As<Actor>()->AsActorValueOwner();
+                    ConsoleLog::GetSingleton()->Print(fmt::format("Health: {}", av->GetActorValue(ActorValue::kHealth)).c_str());
                     hitCache.target = target;
-                    hitCache.source = event->source;
+                    hitCache.source = GetSourceForm(event->source);
                     hitCache.projectile = event->projectile;
                     hitCache.flags = event->flags;
                     hitCache.process = true;
                 } else if (target->IsPlayerRef()) {
                     hitTakenCache.target = cause;
-                    hitTakenCache.source = event->source;
+                    hitTakenCache.source = GetSourceForm(event->source);
                     hitTakenCache.projectile = event->projectile;
                     hitTakenCache.flags = event->flags;
                     hitTakenCache.process = true;
@@ -118,6 +138,16 @@ namespace S_Hits {
             }
             return BSEventNotifyControl::kContinue;
         }
+
+        BSEventNotifyControl ProcessEvent(const TESCellAttachDetachEvent* event,
+                                          BSTEventSource<TESCellAttachDetachEvent>*) {
+            if (!event || !event->reference) return BSEventNotifyControl::kContinue;
+            auto ref = event->reference.get();
+            if (ref->IsActor() && ref->As<Actor>()->HasSpell(LastHitSpell)) {
+                ref->As<Actor>()->RemoveSpell(LastHitSpell);
+            }
+            return BSEventNotifyControl::kContinue;
+        }
     };
 
     void parseJSON(const nlohmann::json_abi_v3_12_0::json& item, TESGlobal* global) {
@@ -125,12 +155,14 @@ namespace S_Hits {
             if (!item.contains(key)) continue;
             auto& data = item.at(key);
             Rule rule;
+            if (data.contains("sourceFilter")) {
+                rule.sourceFilter = Utils::GetForm<TESForm>(data.at("sourceFilter").get<std::string>());
+                if (!rule.sourceFilter) continue;
+            }
             if (data.contains("sameTarget")) {
                 rule.sameTarget = data.at("sameTarget").get<bool>();
             }
-            if (data.contains("mod")) {
-                rule.mod = data.at("mod").get<float>();
-            }
+            rule.mod = ParseValueMod(data);
             if (data.contains("actorsOnly")) {
                 rule.actorsOnly = data.at("actorsOnly").get<bool>();
             }
@@ -162,6 +194,7 @@ namespace S_Hits {
             static EventSink g_sink;
             CriticalHit::GetEventSource()->AddEventSink(&g_sink);
             ScriptEventSourceHolder::GetSingleton()->AddEventSink<TESHitEvent>(&g_sink);
+            ScriptEventSourceHolder::GetSingleton()->AddEventSink<TESCellAttachDetachEvent>(&g_sink);
         }
     }
 }

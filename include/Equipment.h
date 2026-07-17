@@ -27,7 +27,7 @@ namespace S_Equip {
                 bool states[] = {false, true};
                 for (auto state : states) {
                     if (auto* entryData = player->GetEquippedEntryData(state); entryData) {
-                        int isStolen = entryData->GetOwner() ? 1 : 0;
+                        bool isStolen = entryData->GetOwner() ? true : false;
                         if (item.isStolen.has_value() && isStolen != item.isStolen.value()) continue;
                         if (item.isEnchanted.has_value() && entryData->IsEnchanted() != item.isEnchanted.value())
                             continue;
