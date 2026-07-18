@@ -5,9 +5,8 @@ namespace S_Proximity {
 
     struct Rule {
         TESGlobal* global = nullptr;
+        std::optional<FormFilter> formFilter;
         float distance = 0;
-        TESForm* formFilter = nullptr;
-        std::unordered_set<int> formTypes;
         std::optional<bool> hostile;
     };
 
@@ -22,18 +21,12 @@ namespace S_Proximity {
                     if (!ref || ref->IsDisabled() || ref->IsDeleted() || ref->IsPlayerRef())
                         return BSContainer::ForEachResult::kContinue;
                     auto base = ref->GetBaseObject();
-                    if (!item.formTypes.empty() && !item.formTypes.contains(std::to_underlying(base->GetFormType())))
-                        return BSContainer::ForEachResult::kContinue;
                     if (ref->IsActor()) {
                         Actor* actor = ref->As<Actor>();
                         if (item.hostile.has_value() && actor->IsHostileToActor(player) != item.hostile.value())
                             return BSContainer::ForEachResult::kContinue;
-                        if (item.formFilter && !Utils::ParseActorFilter(actor, item.formFilter))
-                            return BSContainer::ForEachResult::kContinue;
-                    } else {
-                        if (item.formFilter && !Utils::ParseFormFilter(base, item.formFilter))
-                            return BSContainer::ForEachResult::kContinue;
                     }
+                    if (item.formFilter.has_value() && !ValidateFormFilter(base, item.formFilter.value())) return BSContainer::ForEachResult::kContinue;
 
                     item.global->value += 1;
                     return BSContainer::ForEachResult::kContinue;
@@ -47,11 +40,8 @@ namespace S_Proximity {
         auto& data = item.at("proximity");
         Rule rule;
         if (data.contains("formFilter")) {
-            rule.formFilter = Utils::GetForm<TESForm>(data.at("formFilter").get<std::string>());
-            if (!rule.formFilter) return;
-        }
-        if (data.contains("formType")) {
-            Utils::FillSet<int>(data.at("formType"), rule.formTypes);
+            rule.formFilter = ParseFormFilter(data.at("formFilter"));
+            if (rule.formFilter == std::nullopt) return;
         }
         if (data.contains("distance")) {
             rule.distance = data.at("distance").get<float>();

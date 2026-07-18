@@ -3,8 +3,7 @@
 namespace S_Magic {
     struct Rule {
         TESGlobal* global = nullptr;
-        TESForm* formFilter = nullptr;
-        std::unordered_set<int> formTypes;
+        std::optional<FormFilter> formFilter;
         std::vector<BGSKeyword*> magicEffectKeywords;
         std::unordered_set<EffectSetting*> magicEffects;
         float mod = 1.0f;
@@ -16,10 +15,7 @@ namespace S_Magic {
         TESForm* spell = TESForm::LookupByID(spellID);
         // ConsoleLog::GetSingleton()->Print(fmt::format("Spell ID: {:x}", spell->GetFormID()).c_str());
         for (auto& item : globals) {
-            if (!item.formTypes.empty() &&
-                !item.formTypes.contains(std::to_underlying(spell->GetFormType())))
-                continue;
-            if (item.formFilter && !Utils::ParseFormFilter(spell, item.formFilter)) continue;
+            if (item.formFilter.has_value() && !ValidateFormFilter(spell, item.formFilter.value())) continue;
             if (!item.magicEffects.empty() && !Utils::FormHasAnyMagicEffect(spell, item.magicEffects)) continue;
             if (!item.magicEffectKeywords.empty() &&
                 !Utils::FormHasMagicEffectKeyword(spell, item.magicEffectKeywords))
@@ -48,12 +44,13 @@ namespace S_Magic {
         if (!item.contains("spellcast")) return;
         auto& data = item.at("spellcast");
         Rule rule;
-        if (data.contains("formType")) {
-            Utils::FillSet<int>(data.at("formType"), rule.formTypes);
+        if (data.contains("formFilter")) {
+            rule.formFilter = ParseFormFilter(data.at("formFilter"));
+            if (rule.formFilter == std::nullopt) return;
         }
         if (data.contains("formFilter")) {
-            rule.formFilter = Utils::GetForm<TESForm>(data.at("formFilter").get<std::string>());
-            if (!rule.formFilter) return;
+            rule.formFilter = ParseFormFilter(data.at("formFilter"));
+            if (rule.formFilter == std::nullopt) return;
         }
         if (data.contains("magicEffect")) {
             Utils::FillFormsSet(data.at("magicEffect"), rule.magicEffects);

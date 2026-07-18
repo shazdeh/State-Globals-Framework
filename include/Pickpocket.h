@@ -8,9 +8,8 @@ namespace S_Pickpocket {
 
     struct Rule {
         TESGlobal* global;
-        TESForm* formFilter = nullptr;
-        TESForm* targetFilter = nullptr;
-        std::unordered_set<int> formTypes;
+        std::optional<FormFilter> formFilter;
+        std::optional<FormFilter> targetFilter;
         bool unique = false;
         bool reverse = false;
         ValueMod mod{};
@@ -35,10 +34,8 @@ namespace S_Pickpocket {
         for (auto& moveEvent : moveMap) {
             for (auto& item : globals) {
                 if (item.reverse != moveEvent.second.second) continue;
-                if (!empty(item.formTypes) && !item.formTypes.contains(std::to_underlying(moveEvent.first->GetFormType())))
-                    continue;
-                if (item.formFilter && !Utils::ParseFormFilter(moveEvent.first, item.formFilter)) continue;
-                if (item.targetFilter && !Utils::ParseActorFilter(currentTarget, item.targetFilter)) continue;
+                if (item.formFilter.has_value() && !ValidateFormFilter(moveEvent.first, item.formFilter.value())) continue;
+                if (item.targetFilter.has_value() && !ValidateFormFilter(currentTarget, item.targetFilter.value())) continue;
 
                 UpdateGlobalValue(item.global, item.mod, item.unique ? 1.0f : moveEvent.second.first);
             }
@@ -94,16 +91,13 @@ namespace S_Pickpocket {
         if (data.contains("mod")) {
             rule.mod = ParseValueMod(item);
         }
-        if (data.contains("formType")) {
-            Utils::FillSet<int>(data.at("formType"), rule.formTypes);
-        }
         if (data.contains("formFilter")) {
-            rule.formFilter = Utils::GetForm<TESForm>(data.at("formFilter").get<std::string>());
-            if (!rule.formFilter) return;
+            rule.formFilter = ParseFormFilter(data.at("formFilter"));
+            if (rule.formFilter == std::nullopt) return;
         }
         if (data.contains("targetFilter")) {
-            rule.targetFilter = Utils::GetForm<TESForm>(data.at("targetFilter").get<std::string>());
-            if (!rule.targetFilter) return;
+            rule.targetFilter = ParseFormFilter(data.at("targetFilter"));
+            if (rule.targetFilter == std::nullopt) return;
         }
         if (data.contains("unique")) {
             rule.unique = data.at("unique").get<bool>();

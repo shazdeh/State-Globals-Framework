@@ -7,9 +7,8 @@ namespace S_MagicEffect {
 
     struct Rule {
         TESGlobal* global = nullptr;
-        TESForm* formFilter = nullptr;
+        std::optional<FormFilter> formFilter;
         std::optional<MagicSystem::SpellType> spellType;
-        std::unordered_set<MagicItem*> spells;
         bool unique = true;
     };
 
@@ -25,7 +24,7 @@ namespace S_MagicEffect {
             for (auto* effect : *effects) {
                 if (!effect || !effect->spell) continue;
                 if (item.spellType && effect->spell->GetSpellType() != item.spellType) continue;
-                if (!item.spells.empty() && !item.spells.contains(effect->spell)) continue;
+                if (item.formFilter.has_value() && !ValidateFormFilter(effect->spell, item.formFilter.value())) continue;
                 if (item.unique) {
                     if (visited.contains(effect->spell)) continue;
                     visited.insert(effect->spell);
@@ -56,12 +55,9 @@ namespace S_MagicEffect {
         if (data.contains("spellType")) {
             rule.spellType = static_cast<MagicSystem::SpellType>(data.at("spellType").get<int>());
         }
-        if (data.contains("spell")) {
-            if (!Utils::FillFormsSet(data.at("spell"), rule.spells)) return;
-        }
         if (data.contains("formFilter")) {
-            rule.formFilter = Utils::GetForm<TESForm>(data.at("formFilter").get<std::string>());
-            if (!rule.formFilter) return;
+            rule.formFilter = ParseFormFilter(data.at("formFilter"));
+            if (rule.formFilter == std::nullopt) return;
         }
         rule.global = global;
         globals.push_back(rule);

@@ -4,7 +4,7 @@ namespace S_Location {
 
     struct Rule {
         TESGlobal* global;
-        TESForm* formFilter = nullptr;
+        std::optional<FormFilter> formFilter;
         bool discover = true;
         bool clear = true;
         ValueMod mod{};
@@ -16,7 +16,7 @@ namespace S_Location {
         auto playerLocation = PlayerCharacter::GetSingleton()->GetCurrentLocation();
         for (auto& item : globals) {
             if ((bCleared && !item.clear) || (!bCleared && !item.discover)) continue;
-            if (item.formFilter && !Utils::ParseFormFilter(playerLocation, item.formFilter)) continue;
+            if (item.formFilter.has_value() && !ValidateFormFilter(playerLocation, item.formFilter.value())) continue;
 
             UpdateGlobalValue(item.global, item.mod);
         }
@@ -44,8 +44,8 @@ namespace S_Location {
             rule.mod = ParseValueMod(item);
         }
         if (data.contains("formFilter")) {
-            rule.formFilter = Utils::GetForm<TESForm>(data.at("formFilter").get<std::string>());
-            if (!rule.formFilter) return;
+            rule.formFilter = ParseFormFilter(data.at("formFilter"));
+            if (rule.formFilter == std::nullopt) return;
         }
         if (data.contains("discover")) {
             rule.discover = data.at("discover").get<bool>();

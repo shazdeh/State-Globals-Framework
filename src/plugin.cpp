@@ -8,7 +8,7 @@ SpellItem* LastHitSpell;
 
 #include "Base.h"
 #include "SpellLearn.h"
-#include "Equipment.h"
+#include "Equip.h"
 #include "Kills.h"
 #include "MagicEffect.h"
 #include "Inventory.h"

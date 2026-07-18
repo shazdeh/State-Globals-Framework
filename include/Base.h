@@ -6,6 +6,12 @@ struct ValueMod {
     bool resetOnMax = false;
 };
 
+struct FormFilter {
+    std::unordered_set<int> formTypes;
+    TESForm* formFilter = nullptr;
+    bool excludeFilter = false;
+};
+
 ValueMod ParseValueMod(const nlohmann::json_abi_v3_12_0::json& item) {
     ValueMod mod;
     if (item.contains("mod")) {
@@ -17,6 +23,31 @@ ValueMod ParseValueMod(const nlohmann::json_abi_v3_12_0::json& item) {
         if (data.contains("resetOnMax")) mod.resetOnMax = data.at("resetOnMax").get<bool>();
     }
     return mod;
+}
+
+std::optional<FormFilter> ParseFormFilter(const nlohmann::json_abi_v3_12_0::json& data) {
+    FormFilter filter;
+    if (data.contains("form")) {
+        filter.formFilter = Utils::GetForm<TESForm>(data.at("form").get<std::string>());
+        if (!filter.formFilter) return std::nullopt;
+    }
+    if (data.contains("type")) Utils::FillSet<int>(data.at("type"), filter.formTypes);
+    if (data.contains("exclude")) filter.excludeFilter = data.at("exclude").get<bool>();
+    return filter;
+}
+
+bool ValidateFormFilter(TESForm* a_form, FormFilter& a_filter) {
+    if (!a_filter.formTypes.empty() && !a_filter.formTypes.contains(std::to_underlying(a_form->GetFormType())))
+        return false;
+    if (a_filter.formFilter) {
+        bool isMatching = a_form->IsActor() ? Utils::ParseActorFilter(a_form->As<Actor>(), a_filter.formFilter)
+                                            : Utils::ParseFormFilter(a_form, a_filter.formFilter);
+        if (a_filter.excludeFilter == isMatching) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 void UpdateGlobalValue(TESGlobal* global, ValueMod& mod, float fMult = 1.0f) {

@@ -7,9 +7,8 @@ namespace S_Barter {
 
     struct Rule {
         TESGlobal* global;
-        TESForm* formFilter = nullptr;
-        TESForm* vendorFilter = nullptr;
-        std::unordered_set<int> formTypes;
+        std::optional<FormFilter> formFilter;
+        std::optional<FormFilter> vendorFilter;
         bool unique = false;
         float mod = 1.0f;
         std::optional<float> min;
@@ -34,10 +33,10 @@ namespace S_Barter {
     void Process(std::vector<Rule>&arr, FormID itemID, int32_t count) {
         for (auto& item : arr) {
             if (TESForm* form = TESForm::LookupByID(itemID); form) {
-                if (!empty(item.formTypes) && !item.formTypes.contains(std::to_underlying(form->GetFormType())))
+                if (item.formFilter.has_value() && !ValidateFormFilter(form, item.formFilter.value()))
                     continue;
-                if (item.formFilter && !Utils::ParseFormFilter(form, item.formFilter)) continue;
-                if (item.vendorFilter && !Utils::ParseActorFilter(currentVendor, item.vendorFilter)) continue;
+                if (item.vendorFilter.has_value() && !ValidateFormFilter(currentVendor, item.vendorFilter.value()))
+                    continue;
 
                 if (item.mod == 0.0f) {
                     item.global->value = 0;
@@ -88,16 +87,13 @@ namespace S_Barter {
             if (!item.contains(key)) continue;
             auto& data = item.at(key);
             Rule rule;
-            if (data.contains("formType")) {
-                Utils::FillSet<int>(data.at("formType"), rule.formTypes);
-            }
             if (data.contains("formFilter")) {
-                rule.formFilter = Utils::GetForm<TESForm>(data.at("formFilter").get<std::string>());
-                if (!rule.formFilter) continue;
+                rule.formFilter = ParseFormFilter(data.at("formFilter"));
+                if (rule.formFilter == std::nullopt) return;
             }
             if (data.contains("vendorFilter")) {
-                rule.vendorFilter = Utils::GetForm<TESForm>(data.at("vendorFilter").get<std::string>());
-                if (!rule.vendorFilter) continue;
+                rule.vendorFilter = ParseFormFilter(data.at("vendorFilter"));
+                if (rule.vendorFilter == std::nullopt) return;
             }
             if (data.contains("unique")) {
                 rule.unique = data.at("unique").get<bool>();

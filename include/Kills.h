@@ -5,7 +5,7 @@ namespace S_Kills {
 
     struct Rule {
         TESGlobal* global = nullptr;
-        TESForm* formFilter = nullptr;
+        std::optional<FormFilter> formFilter;
         BGSPerk* conditionPerk = nullptr;
         std::optional<bool> isCommanded;
         ValueType type = ValueType::Counter;
@@ -17,7 +17,7 @@ namespace S_Kills {
     void Process(Actor* victim) {
         for (auto& item : globals) {
             if (item.isCommanded.has_value() && victim->IsCommandedActor() != item.isCommanded) continue;
-            if (item.formFilter && !Utils::ParseActorFilter(victim, item.formFilter)) continue;
+            if (item.formFilter.has_value() && !ValidateFormFilter(victim, item.formFilter.value())) continue;
             if (item.conditionPerk &&
                 !item.conditionPerk->perkConditions.IsTrue(PlayerCharacter::GetSingleton(), victim))
                 continue;
@@ -59,8 +59,8 @@ namespace S_Kills {
         auto& data = item.at("kill");
         Rule rule;
         if (data.contains("formFilter")) {
-            rule.formFilter = Utils::GetForm<TESForm>(data.at("formFilter").get<std::string>());
-            if (!rule.formFilter) return;
+            rule.formFilter = ParseFormFilter(data.at("formFilter"));
+            if (rule.formFilter == std::nullopt) return;
         }
         if (data.contains("conditionPerk")) {
             rule.conditionPerk = Utils::GetForm<BGSPerk>(data.at("conditionPerk").get<std::string>());

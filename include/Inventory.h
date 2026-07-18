@@ -12,9 +12,7 @@ namespace S_Inventory {
 
     struct Rule {
         TESGlobal* global = nullptr;
-        TESForm* formFilter = nullptr;
-        TESForm* formExcludeFilter = nullptr;
-        std::unordered_set<int> formTypes;
+        std::optional<FormFilter> formFilter;
         std::optional<bool> isEnchanted;
         std::optional<bool> isStolen;
         ValueType valueType = ValueType::Count;
@@ -28,11 +26,7 @@ namespace S_Inventory {
         for (auto& item : globals) {
             float value = 0.0f;
             for (auto& [inventoryItem, data] : inventory) {
-                if (!item.formTypes.empty() &&
-                    !item.formTypes.contains(std::to_underlying(inventoryItem->GetFormType())))
-                    continue;
-                if (item.formExcludeFilter && Utils::ParseFormFilter(inventoryItem, item.formExcludeFilter)) continue;
-                if (item.formFilter && !Utils::ParseFormFilter(inventoryItem, item.formFilter)) continue;
+                if (item.formFilter.has_value() && !ValidateFormFilter(inventoryItem, item.formFilter.value())) continue;
                 if (item.isEnchanted.has_value() &&
                     data.second->IsEnchanted() != item.isEnchanted.value())
                     continue;
@@ -68,19 +62,12 @@ namespace S_Inventory {
         if (!item.contains("inventory")) return;
         auto& data = item.at("inventory");
         Rule rule;
-        if (data.contains("formType")) {
-            Utils::FillSet<int>(data.at("formType"), rule.formTypes);
+        if (data.contains("formFilter")) {
+            rule.formFilter = ParseFormFilter(data.at("formFilter"));
+            if (rule.formFilter == std::nullopt) return;
         }
         if (data.contains("unique")) {
             rule.unique = data.at("unique").get<bool>();
-        }
-        if (data.contains("formFilter")) {
-            rule.formFilter = Utils::GetForm<TESForm>(data.at("formFilter").get<std::string>());
-            if (!rule.formFilter) return;
-        }
-        if (data.contains("formExcludeFilter")) {
-            rule.formExcludeFilter = Utils::GetForm<TESForm>(data.at("formExcludeFilter").get<std::string>());
-            if (!rule.formExcludeFilter) return;
         }
         if (data.contains("enchanted")) {
             rule.isEnchanted = data.at("enchanted").get<bool>();

@@ -3,7 +3,7 @@
 namespace S_Read {
     struct Rule {
         TESGlobal* global = nullptr;
-        TESForm* formFilter = nullptr;
+        std::optional<FormFilter> formFilter;
         std::optional<bool> skillBook;
         std::optional<bool> spellBook;
     };
@@ -14,7 +14,7 @@ namespace S_Read {
         for (auto& item : globals) {
             if (item.skillBook.has_value() && skillBook != item.skillBook.value()) continue;
             if (item.spellBook.has_value() && book->TeachesSpell() != item.spellBook.value()) continue;
-            if (item.formFilter && !Utils::ParseFormFilter(book, item.formFilter)) continue;
+            if (item.formFilter.has_value() && !ValidateFormFilter(book, item.formFilter.value())) continue;
 
             item.global->value += 1;
         }
@@ -33,8 +33,8 @@ namespace S_Read {
         auto& data = item.at("read");
         Rule rule;
         if (data.contains("formFilter")) {
-            rule.formFilter = Utils::GetForm<TESForm>(data.at("formFilter").get<std::string>());
-            if (!rule.formFilter) return;
+            rule.formFilter = ParseFormFilter(data.at("formFilter"));
+            if (rule.formFilter == std::nullopt) return;
         }
         if (data.contains("skillBook")) {
             rule.skillBook = data.at("skillBook").get<bool>();

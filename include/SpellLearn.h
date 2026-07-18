@@ -3,8 +3,7 @@
 namespace S_SpellLearn {
     struct Rule {
         TESGlobal* global = nullptr;
-        TESForm* formFilter = nullptr;
-        bool keywordMatchAll = false;
+        std::optional<FormFilter> formFilter;
         std::optional<int> skillLevel;
         std::string skillComp = "=";
         ActorValue av = ActorValue::kNone;
@@ -31,7 +30,7 @@ namespace S_SpellLearn {
                 !Utils::compare(skillLevel, item.skillLevel.value(), item.skillComp))
                 continue;
             if (item.av != ActorValue::kNone && assocSkill != item.av) continue;
-            if (item.formFilter && !Utils::ParseFormFilter(spell, item.formFilter)) continue;
+            if (item.formFilter.has_value() && !ValidateFormFilter(spell, item.formFilter.value())) continue;
 
             item.global->value += item.mod;
         }
@@ -78,8 +77,8 @@ namespace S_SpellLearn {
             rule.av = static_cast<ActorValue>(skill);
         }
         if (data.contains("formFilter")) {
-            rule.formFilter = Utils::GetForm<TESForm>(data.at("formFilter").get<std::string>());
-            if (!rule.formFilter) return;
+            rule.formFilter = ParseFormFilter(data.at("formFilter"));
+            if (rule.formFilter == std::nullopt) return;
         }
         rule.global = global;
         globals.push_back(rule);

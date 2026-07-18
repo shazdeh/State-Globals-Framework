@@ -2,11 +2,13 @@
 
 namespace S_Perks {
     struct Rule {
+        TESGlobal* global;
+        std::optional<FormFilter> formFilter;
         bool owned = true;
         std::unordered_set<ActorValue> skills;
     };
 
-    std::unordered_map<TESGlobal*, Rule> globals;
+    std::vector<Rule> globals;
 
     void LogTreeInternal(BGSSkillPerkTreeNode* node, std::unordered_set<BGSSkillPerkTreeNode*>& visited,
                          std::unordered_set<BGSPerk*>& perks) {
@@ -42,15 +44,16 @@ namespace S_Perks {
 
         for (auto& item : globals) {
             float value = 0.0f;
-            for (auto av : item.second.skills) {
+            for (auto av : item.skills) {
                 auto it = map.find(av);
                 if (it != map.end()) {
                     for (auto perk : it->second) {
+                        if (item.formFilter.has_value() && !ValidateFormFilter(perk, item.formFilter.value())) continue;
                         if (player->HasPerk(perk)) value++;
                     }
                 }
             }
-            item.first->value = value;
+            item.global->value = value;
         }
     }
 
@@ -69,7 +72,12 @@ namespace S_Perks {
         if (!data.contains("skill")) return;
         Rule rule;
         Utils::FillSet(data.at("skill"), rule.skills);
-        globals.insert({global, rule});
+        if (data.contains("formFilter")) {
+            rule.formFilter = ParseFormFilter(data.at("formFilter"));
+            if (rule.formFilter == std::nullopt) return;
+        }
+        rule.global = global;
+        globals.push_back(rule);
     }
 
     void SetupEvents() {
