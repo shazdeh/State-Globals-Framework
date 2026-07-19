@@ -50,6 +50,20 @@ bool ValidateFormFilter(TESForm* a_form, FormFilter& a_filter) {
     return true;
 }
 
+bool ValidateConditionForm(TESForm* a_form) {
+    switch (a_form->GetFormType()) {
+        case FormType::Perk:
+            return player->HasPerk(a_form->As<BGSPerk>());
+        case FormType::MagicEffect:
+            return player->HasMagicEffect(a_form->As<EffectSetting>());
+        case FormType::Faction:
+            return player->IsInFaction(a_form->As<TESFaction>());
+        case FormType::Location:
+            return Utils::MatchLocation(player->GetCurrentLocation(), a_form->As<BGSLocation>());
+    }
+    return false;
+}
+
 void UpdateGlobalValue(TESGlobal* global, ValueMod& mod, float fMult = 1.0f) {
     // ConsoleLog::GetSingleton()->Print(fmt::format("global: {}, modvalue: {} with mult: {}", clib_util::editorID::get_editorID(global), mod.value, fMult).c_str());
     if (mod.value == 0.0f || fMult == 0.0f) {

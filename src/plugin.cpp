@@ -5,6 +5,7 @@
 
 //BGSListForm* LastHitList;
 SpellItem* LastHitSpell;
+PlayerCharacter* player;
 
 #include "Base.h"
 #include "SpellLearn.h"
@@ -17,7 +18,7 @@ SpellItem* LastHitSpell;
 #include "Perks.h"
 #include "Barter.h"
 #include "Pickpocket.h"
-#include "Proximity.h"
+#include "RefCount.h"
 #include "Read.h"
 #include "Hits.h"
 #include "Location.h"
@@ -42,7 +43,7 @@ static void ParseData(const json& data) {
         S_Perks::parseJSON(item, global);
         S_Hits::parseJSON(item, global);
         S_Barter::parseJSON(item, global);
-        S_Proximity::parseJSON(item, global);
+        S_RefCount::parseJSON(item, global);
         S_Read::parseJSON(item, global);
         S_Pickpocket::parseJSON(item, global);
         S_Location::parseJSON(item, global);
@@ -81,6 +82,7 @@ bool LoadConfig() {
 
 void OnMessage(SKSE::MessagingInterface::Message* message) {
     if (message->type == SKSE::MessagingInterface::kDataLoaded) {
+        player = PlayerCharacter::GetSingleton();
         LoadConfig();
         BuildRules();
         // ConsoleLog::GetSingleton()->Print(fmt::format("Size of kills map: {}", Kills::globals.size()).c_str());
@@ -94,7 +96,7 @@ void OnMessage(SKSE::MessagingInterface::Message* message) {
         S_Perks::SetupEvents();
         S_Hits::SetupEvents();
         S_Barter::SetupEvents();
-        S_Proximity::SetupEvents();
+        S_RefCount::SetupEvents();
         S_Read::SetupEvents();
         S_Pickpocket::SetupEvents();
         S_Location::SetupEvents();

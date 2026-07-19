@@ -1,6 +1,6 @@
 #pragma once
 
-namespace S_Proximity {
+namespace S_RefCount {
     std::unique_ptr<Ticker> ticker;
 
     struct Rule {
@@ -8,16 +8,16 @@ namespace S_Proximity {
         std::optional<FormFilter> formFilter;
         float distance = 0;
         std::optional<bool> hostile;
+        std::string levelComp;
     };
 
     std::vector<Rule> globals;
 
     void Tick() {
         if (const auto& tes = TES::GetSingleton(); tes) {
-            Actor* player = PlayerCharacter::GetSingleton();
             for (auto& item : globals) {
                 item.global->value = 0.0f;
-                tes->ForEachReferenceInRange(player, item.distance, [&item, player](TESObjectREFR* ref) {
+                tes->ForEachReferenceInRange(player, item.distance, [&item](TESObjectREFR* ref) {
                     if (!ref || ref->IsDisabled() || ref->IsDeleted() || ref->IsPlayerRef())
                         return BSContainer::ForEachResult::kContinue;
                     auto base = ref->GetBaseObject();
@@ -25,8 +25,12 @@ namespace S_Proximity {
                         Actor* actor = ref->As<Actor>();
                         if (item.hostile.has_value() && actor->IsHostileToActor(player) != item.hostile.value())
                             return BSContainer::ForEachResult::kContinue;
+                        if (!item.levelComp.empty() &&
+                            !Utils::compare(player->GetLevel(), actor->GetLevel(), item.levelComp))
+                            return BSContainer::ForEachResult::kContinue;
                     }
-                    if (item.formFilter.has_value() && !ValidateFormFilter(base, item.formFilter.value())) return BSContainer::ForEachResult::kContinue;
+                    if (item.formFilter.has_value() && !ValidateFormFilter(base, item.formFilter.value()))
+                        return BSContainer::ForEachResult::kContinue;
 
                     item.global->value += 1;
                     return BSContainer::ForEachResult::kContinue;
@@ -36,8 +40,8 @@ namespace S_Proximity {
     }
 
     void parseJSON(const nlohmann::json_abi_v3_12_0::json& item, TESGlobal* global) {
-        if (!item.contains("proximity")) return;
-        auto& data = item.at("proximity");
+        if (!item.contains("refcount")) return;
+        auto& data = item.at("refcount");
         Rule rule;
         if (data.contains("formFilter")) {
             rule.formFilter = ParseFormFilter(data.at("formFilter"));
@@ -48,6 +52,9 @@ namespace S_Proximity {
         }
         if (data.contains("hostile")) {
             rule.hostile = data.at("hostile").get<bool>();
+        }
+        if (data.contains("level")) {
+            rule.levelComp = data.at("level").get<std::string>();
         }
         rule.global = global;
         globals.push_back(rule);

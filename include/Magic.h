@@ -3,6 +3,7 @@
 namespace S_Magic {
     struct Rule {
         TESGlobal* global = nullptr;
+        TESForm* conditionForm = nullptr;
         std::optional<FormFilter> formFilter;
         std::vector<BGSKeyword*> magicEffectKeywords;
         std::unordered_set<EffectSetting*> magicEffects;
@@ -20,6 +21,7 @@ namespace S_Magic {
             if (!item.magicEffectKeywords.empty() &&
                 !Utils::FormHasMagicEffectKeyword(spell, item.magicEffectKeywords))
                 continue;
+            if (item.conditionForm && !ValidateConditionForm(item.conditionForm)) continue;
 
             if (item.mod == 0.0f) {
                 item.global->value = 0;
@@ -48,9 +50,9 @@ namespace S_Magic {
             rule.formFilter = ParseFormFilter(data.at("formFilter"));
             if (rule.formFilter == std::nullopt) return;
         }
-        if (data.contains("formFilter")) {
-            rule.formFilter = ParseFormFilter(data.at("formFilter"));
-            if (rule.formFilter == std::nullopt) return;
+        if (data.contains("conditionForm")) {
+            rule.conditionForm = Utils::GetForm<TESForm>(data.at("conditionForm").get<std::string>());
+            if (!rule.conditionForm) return;
         }
         if (data.contains("magicEffect")) {
             Utils::FillFormsSet(data.at("magicEffect"), rule.magicEffects);

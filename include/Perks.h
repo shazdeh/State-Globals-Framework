@@ -30,7 +30,6 @@ namespace S_Perks {
     void Process() {
         auto avList = ActorValueList::GetSingleton();
         if (!avList) return;
-        auto player = PlayerCharacter::GetSingleton();
         static std::map<ActorValue, std::unordered_set<BGSPerk*>> map;
         static bool init = false;
         if (!init) {

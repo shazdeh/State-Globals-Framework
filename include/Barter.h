@@ -7,6 +7,7 @@ namespace S_Barter {
 
     struct Rule {
         TESGlobal* global;
+        TESForm* conditionForm = nullptr;
         std::optional<FormFilter> formFilter;
         std::optional<FormFilter> vendorFilter;
         bool unique = false;
@@ -37,6 +38,7 @@ namespace S_Barter {
                     continue;
                 if (item.vendorFilter.has_value() && !ValidateFormFilter(currentVendor, item.vendorFilter.value()))
                     continue;
+                if (item.conditionForm && !ValidateConditionForm(item.conditionForm)) continue;
 
                 if (item.mod == 0.0f) {
                     item.global->value = 0;
@@ -94,6 +96,10 @@ namespace S_Barter {
             if (data.contains("vendorFilter")) {
                 rule.vendorFilter = ParseFormFilter(data.at("vendorFilter"));
                 if (rule.vendorFilter == std::nullopt) return;
+            }
+            if (data.contains("conditionForm")) {
+                rule.conditionForm = Utils::GetForm<TESForm>(data.at("conditionForm").get<std::string>());
+                if (!rule.conditionForm) return;
             }
             if (data.contains("unique")) {
                 rule.unique = data.at("unique").get<bool>();

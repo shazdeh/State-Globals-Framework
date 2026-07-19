@@ -19,7 +19,6 @@ namespace S_Equip {
     std::vector<Rule> globals;
 
     void Process() {
-        auto player = PlayerCharacter::GetSingleton();
         auto inventory = player->GetInventory();
 
         for (auto& item : globals) {

@@ -8,6 +8,7 @@ namespace S_Pickpocket {
 
     struct Rule {
         TESGlobal* global;
+        TESForm* conditionForm = nullptr; 
         std::optional<FormFilter> formFilter;
         std::optional<FormFilter> targetFilter;
         bool unique = false;
@@ -34,6 +35,7 @@ namespace S_Pickpocket {
         for (auto& moveEvent : moveMap) {
             for (auto& item : globals) {
                 if (item.reverse != moveEvent.second.second) continue;
+                if (item.conditionForm && !ValidateConditionForm(item.conditionForm)) continue;
                 if (item.formFilter.has_value() && !ValidateFormFilter(moveEvent.first, item.formFilter.value())) continue;
                 if (item.targetFilter.has_value() && !ValidateFormFilter(currentTarget, item.targetFilter.value())) continue;
 
@@ -90,6 +92,10 @@ namespace S_Pickpocket {
         Rule rule;
         if (data.contains("mod")) {
             rule.mod = ParseValueMod(item);
+        }
+        if (data.contains("conditionForm")) {
+            rule.conditionForm = Utils::GetForm<TESForm>(data.at("conditionForm").get<std::string>());
+            if (!rule.conditionForm) return;
         }
         if (data.contains("formFilter")) {
             rule.formFilter = ParseFormFilter(data.at("formFilter"));

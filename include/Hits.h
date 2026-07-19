@@ -17,6 +17,7 @@ namespace S_Hits {
 
     struct Rule {
         TESGlobal* global = nullptr;
+        TESForm* conditionForm = nullptr;
         TESForm* sourceFilter = nullptr;
         std::optional<bool> sameTarget;
         bool actorsOnly = true;
@@ -65,6 +66,9 @@ namespace S_Hits {
             checkFlag(item.bashAttack, TESHitEvent::Flag::kBashAttack);
             checkFlag(item.blocked, TESHitEvent::Flag::kHitBlocked);
 
+            if (item.conditionForm && !ValidateConditionForm(item.conditionForm)) {
+                matches = false;
+            }
             if (item.sourceFilter && !Utils::ParseFormFilter(hit.source, item.sourceFilter)) {
                 matches = false;
                 if (item.resetOnMismatchHit) reset = true;
@@ -78,9 +82,9 @@ namespace S_Hits {
             }
 
             if (reset)
-                UpdateGlobalValue(item.global, item.mod, true);
+                UpdateGlobalValue(item.global, item.mod, 0.0f);
             else if (matches)
-                UpdateGlobalValue(item.global, item.mod, false);
+                UpdateGlobalValue(item.global, item.mod);
         }
     }
 
@@ -158,6 +162,10 @@ namespace S_Hits {
             if (data.contains("sourceFilter")) {
                 rule.sourceFilter = Utils::GetForm<TESForm>(data.at("sourceFilter").get<std::string>());
                 if (!rule.sourceFilter) continue;
+            }
+            if (data.contains("conditionForm")) {
+                rule.conditionForm = Utils::GetForm<TESForm>(data.at("conditionForm").get<std::string>());
+                if (!rule.conditionForm) return;
             }
             if (data.contains("sameTarget")) {
                 rule.sameTarget = data.at("sameTarget").get<bool>();
