@@ -33,6 +33,7 @@ namespace S_Combat {
     }
 
     void Tick() {
+        if (Utils::IsPaused()) return;
         if (inCombat && !player->IsInCombat()) {
             CombatEnd();
             inCombat = false;

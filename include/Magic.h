@@ -5,8 +5,6 @@ namespace S_Magic {
         TESGlobal* global = nullptr;
         TESForm* conditionForm = nullptr;
         std::optional<FormFilter> formFilter;
-        std::vector<BGSKeyword*> magicEffectKeywords;
-        std::unordered_set<EffectSetting*> magicEffects;
         float mod = 1.0f;
     };
 
@@ -17,13 +15,9 @@ namespace S_Magic {
         // ConsoleLog::GetSingleton()->Print(fmt::format("Spell ID: {:x}", spell->GetFormID()).c_str());
         for (auto& item : globals) {
             if (item.formFilter.has_value() && !ValidateFormFilter(spell, item.formFilter.value())) continue;
-            if (!item.magicEffects.empty() && !Utils::FormHasAnyMagicEffect(spell, item.magicEffects)) continue;
-            if (!item.magicEffectKeywords.empty() &&
-                !Utils::FormHasMagicEffectKeyword(spell, item.magicEffectKeywords))
-                continue;
             if (item.conditionForm && !ValidateConditionForm(item.conditionForm)) continue;
 
-            if (item.mod == 0.0f) {
+            if (item.mod == 0.0f) { 
                 item.global->value = 0;
             } else {
                 item.global->value += item.mod;
@@ -53,12 +47,6 @@ namespace S_Magic {
         if (data.contains("conditionForm")) {
             rule.conditionForm = Utils::GetForm<TESForm>(data.at("conditionForm").get<std::string>());
             if (!rule.conditionForm) return;
-        }
-        if (data.contains("magicEffect")) {
-            Utils::FillFormsSet(data.at("magicEffect"), rule.magicEffects);
-        }
-        if (data.contains("magicEffectKeyword")) {
-            if (!Utils::fillFormsArray(data.at("magicEffectKeyword"), rule.magicEffectKeywords)) return;
         }
         if (data.contains("mod")) {
             rule.mod = data.at("mod").get<float>();

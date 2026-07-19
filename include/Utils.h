@@ -35,7 +35,7 @@ namespace Utils {
     }
 
     template <typename T>
-    bool fillFormsArray(const nlohmann::json_abi_v3_12_0::json& data, std::vector<T*>& arr) {
+    bool FillFormsArray(const nlohmann::json_abi_v3_12_0::json& data, std::vector<T*>& arr) {
         if (data.is_array()) {
             for (auto& item : data) {
                 T* form = GetForm<T>(item.get<std::string>());
@@ -209,5 +209,9 @@ namespace Utils {
         }
 
         return false;
+    }
+
+    bool IsPaused() {
+        return (UI::GetSingleton()->GameIsPaused() || UI::GetSingleton()->IsMenuOpen(LoadingMenu::MENU_NAME));
     }
 }

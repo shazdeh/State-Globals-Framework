@@ -9,7 +9,9 @@ struct ValueMod {
 struct FormFilter {
     std::unordered_set<int> formTypes;
     TESForm* formFilter = nullptr;
+    std::vector<BGSKeyword*> magicEffectKeyword;
     bool excludeFilter = false;
+    bool keywordMatchAll = false;
 };
 
 ValueMod ParseValueMod(const nlohmann::json_abi_v3_12_0::json& item) {
@@ -31,6 +33,10 @@ std::optional<FormFilter> ParseFormFilter(const nlohmann::json_abi_v3_12_0::json
         filter.formFilter = Utils::GetForm<TESForm>(data.at("form").get<std::string>());
         if (!filter.formFilter) return std::nullopt;
     }
+    if (data.contains("magicEffectKeyword")) {
+        if (!Utils::FillFormsArray<BGSKeyword>(data.at("magicEffectKeyword"), filter.magicEffectKeyword))
+            return std::nullopt;
+    }
     if (data.contains("type")) Utils::FillSet<int>(data.at("type"), filter.formTypes);
     if (data.contains("exclude")) filter.excludeFilter = data.at("exclude").get<bool>();
     return filter;
@@ -46,6 +52,9 @@ bool ValidateFormFilter(TESForm* a_form, FormFilter& a_filter) {
             return false;
         }
     }
+
+    if (!a_filter.magicEffectKeyword.empty() && !Utils::FormHasMagicEffectKeyword(a_form, a_filter.magicEffectKeyword))
+        return false;
 
     return true;
 }

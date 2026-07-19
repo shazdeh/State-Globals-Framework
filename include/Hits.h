@@ -121,8 +121,8 @@ namespace S_Hits {
             auto target = event->target.get();
             if (cause && target) {
                 if (cause->IsPlayerRef()) {
-                    auto av = target->As<Actor>()->AsActorValueOwner();
-                    ConsoleLog::GetSingleton()->Print(fmt::format("Health: {}", av->GetActorValue(ActorValue::kHealth)).c_str());
+                    // auto av = target->As<Actor>()->AsActorValueOwner();
+                    // if (av) ConsoleLog::GetSingleton()->Print(fmt::format("Health: {}", av->GetActorValue(ActorValue::kHealth)).c_str());
                     hitCache.target = target;
                     hitCache.source = GetSourceForm(event->source);
                     hitCache.projectile = event->projectile;

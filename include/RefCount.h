@@ -14,6 +14,7 @@ namespace S_RefCount {
     std::vector<Rule> globals;
 
     void Tick() {
+        if (Utils::IsPaused()) return;
         if (const auto& tes = TES::GetSingleton(); tes) {
             for (auto& item : globals) {
                 item.global->value = 0.0f;
