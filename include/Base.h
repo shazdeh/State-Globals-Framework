@@ -74,7 +74,7 @@ bool ValidateConditionForm(TESForm* a_form) {
 }
 
 void UpdateGlobalValue(TESGlobal* global, ValueMod& mod, float fMult = 1.0f) {
-    // ConsoleLog::GetSingleton()->Print(fmt::format("global: {}, modvalue: {} with mult: {}", clib_util::editorID::get_editorID(global), mod.value, fMult).c_str());
+    //ConsoleLog::GetSingleton()->Print(fmt::format("global: {}, modvalue: {} with mult: {}", clib_util::editorID::get_editorID(global), mod.value, fMult).c_str());
     if (mod.value == 0.0f || fMult == 0.0f) {
         global->value = 0;
     } else {
