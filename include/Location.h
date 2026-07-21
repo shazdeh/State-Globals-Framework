@@ -5,9 +5,9 @@ namespace S_Location {
     struct Rule {
         TESGlobal* global;
         std::optional<FormFilter> formFilter;
+        ValueMod mod{};
         bool discover = true;
         bool clear = true;
-        ValueMod mod{};
     };
 
     std::vector<Rule> globals;
@@ -40,9 +40,7 @@ namespace S_Location {
         if (!item.contains("location")) return;
         auto& data = item.at("location");
         Rule rule;
-        if (data.contains("mod")) {
-            rule.mod = ParseValueMod(item);
-        }
+        rule.mod = ParseValueMod(data);
         if (data.contains("formFilter")) {
             rule.formFilter = ParseFormFilter(data.at("formFilter"));
             if (rule.formFilter == std::nullopt) return;

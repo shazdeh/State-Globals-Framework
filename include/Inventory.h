@@ -16,6 +16,7 @@ namespace S_Inventory {
         std::optional<bool> isEnchanted;
         std::optional<bool> isStolen;
         ValueType valueType = ValueType::Count;
+        ValueMod mod{};
         bool unique = false;
     };
 
@@ -26,6 +27,7 @@ namespace S_Inventory {
         for (auto& item : globals) {
             float value = 0.0f;
             for (auto& [inventoryItem, data] : inventory) {
+                if (data.first == 0) continue; // why does InventoryItemMap contain items with 0 count?
                 if (item.formFilter.has_value() && !ValidateFormFilter(inventoryItem, item.formFilter.value())) continue;
                 if (item.isEnchanted.has_value() &&
                     data.second->IsEnchanted() != item.isEnchanted.value())
@@ -42,7 +44,7 @@ namespace S_Inventory {
                     value += count;
                 }
             }
-            item.global->value = value;
+            UpdateGlobalValue(item.global, item.mod, value, true);
         }
         bQueued = false;
     }
@@ -62,6 +64,7 @@ namespace S_Inventory {
         if (!item.contains("inventory")) return;
         auto& data = item.at("inventory");
         Rule rule;
+        rule.mod = ParseValueMod(data);
         if (data.contains("formFilter")) {
             rule.formFilter = ParseFormFilter(data.at("formFilter"));
             if (rule.formFilter == std::nullopt) return;

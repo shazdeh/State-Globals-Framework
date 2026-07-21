@@ -6,29 +6,22 @@ namespace S_Combat {
     bool inCombat;
 
     struct Rule {
-        float mod = 1.0f;
+        TESGlobal* global;
+        ValueMod mod{};
     };
 
-    std::unordered_map<TESGlobal*, Rule> startGlobals;
-    std::unordered_map<TESGlobal*, Rule> endGlobals;
+    std::vector<Rule> startGlobals;
+    std::vector<Rule> endGlobals;
 
     void CombatStart() {
         for (auto& item : startGlobals) {
-            if (item.second.mod == 0) {
-                item.first->value = 0;
-            } else {
-                item.first->value += item.second.mod;
-            }
+            UpdateGlobalValue(item.global, item.mod);
         }
     }
 
     void CombatEnd() {
         for (auto& item : endGlobals) {
-            if (item.second.mod == 0) {
-                item.first->value = 0;
-            } else {
-                item.first->value += item.second.mod;
-            }
+            UpdateGlobalValue(item.global, item.mod);
         }
     }
 
@@ -48,13 +41,12 @@ namespace S_Combat {
             if (item.contains(key)) {
                 auto& data = item.at(key);
                 Rule rule;
-                if (data.contains("mod")) {
-                    rule.mod = data.at("mod").get<float>();
-                }
+                rule.mod = ParseValueMod(data);
+                rule.global = global;
                 if (key == "combatstart"sv) {
-                    startGlobals.insert({global, rule});
+                    startGlobals.push_back(rule);
                 } else {
-                    endGlobals.insert({global, rule});
+                    endGlobals.push_back(rule);
                 }
             }
         }

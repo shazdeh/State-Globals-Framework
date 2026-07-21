@@ -5,23 +5,19 @@ namespace S_Magic {
         TESGlobal* global = nullptr;
         TESForm* conditionForm = nullptr;
         std::optional<FormFilter> formFilter;
-        float mod = 1.0f;
+        ValueMod mod{};
     };
 
     std::vector<Rule> globals;
 
     void Process(FormID spellID) {
         TESForm* spell = TESForm::LookupByID(spellID);
-        // ConsoleLog::GetSingleton()->Print(fmt::format("Spell ID: {:x}", spell->GetFormID()).c_str());
+        ConsoleLog::GetSingleton()->Print(fmt::format("Spell cast ID: {:x}, editor ID: {}", spell->GetFormID(), clib_util::editorID::get_editorID(spell)).c_str());
         for (auto& item : globals) {
             if (item.formFilter.has_value() && !ValidateFormFilter(spell, item.formFilter.value())) continue;
             if (item.conditionForm && !ValidateConditionForm(item.conditionForm)) continue;
 
-            if (item.mod == 0.0f) { 
-                item.global->value = 0;
-            } else {
-                item.global->value += item.mod;
-            }
+            UpdateGlobalValue(item.global, item.mod);
         }
     }
 
@@ -40,6 +36,7 @@ namespace S_Magic {
         if (!item.contains("spellcast")) return;
         auto& data = item.at("spellcast");
         Rule rule;
+        rule.mod = ParseValueMod(data);
         if (data.contains("formFilter")) {
             rule.formFilter = ParseFormFilter(data.at("formFilter"));
             if (rule.formFilter == std::nullopt) return;
@@ -47,9 +44,6 @@ namespace S_Magic {
         if (data.contains("conditionForm")) {
             rule.conditionForm = Utils::GetForm<TESForm>(data.at("conditionForm").get<std::string>());
             if (!rule.conditionForm) return;
-        }
-        if (data.contains("mod")) {
-            rule.mod = data.at("mod").get<float>();
         }
 
         rule.global = global;

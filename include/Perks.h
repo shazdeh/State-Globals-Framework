@@ -6,6 +6,7 @@ namespace S_Perks {
         std::optional<FormFilter> formFilter;
         bool owned = true;
         std::unordered_set<ActorValue> skills;
+        ValueMod mod{};
     };
 
     std::vector<Rule> globals;
@@ -48,11 +49,11 @@ namespace S_Perks {
                 if (it != map.end()) {
                     for (auto perk : it->second) {
                         if (item.formFilter.has_value() && !ValidateFormFilter(perk, item.formFilter.value())) continue;
-                        if (player->HasPerk(perk)) value++;
+                        if (item.owned == player->HasPerk(perk)) value++;
                     }
                 }
             }
-            item.global->value = value;
+            UpdateGlobalValue(item.global, item.mod, value, true);
         }
     }
 
@@ -70,6 +71,7 @@ namespace S_Perks {
         auto& data = item.at("perk");
         if (!data.contains("skill")) return;
         Rule rule;
+        rule.mod = ParseValueMod(data);
         Utils::FillSet(data.at("skill"), rule.skills);
         if (data.contains("formFilter")) {
             rule.formFilter = ParseFormFilter(data.at("formFilter"));

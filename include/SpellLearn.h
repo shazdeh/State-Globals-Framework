@@ -4,10 +4,10 @@ namespace S_SpellLearn {
     struct Rule {
         TESGlobal* global = nullptr;
         std::optional<FormFilter> formFilter;
+        ValueMod mod{};
         std::optional<int> skillLevel;
         std::string skillComp = "=";
         ActorValue av = ActorValue::kNone;
-        float mod = 1.0f;
     };
 
     std::vector<Rule> globals;
@@ -32,7 +32,7 @@ namespace S_SpellLearn {
             if (item.av != ActorValue::kNone && assocSkill != item.av) continue;
             if (item.formFilter.has_value() && !ValidateFormFilter(spell, item.formFilter.value())) continue;
 
-            item.global->value += item.mod;
+            UpdateGlobalValue(item.global, item.mod);
         }
     }
 
@@ -66,6 +66,7 @@ namespace S_SpellLearn {
         if (!item.contains("learnspell")) return;
         auto& data = item.at("learnspell");
         Rule rule;
+        rule.mod = ParseValueMod(data);
         if (data.contains("skillLevel")) {
             rule.skillLevel = data.at("skillLevel").get<int>();
             if (data.contains("skillComp")) {

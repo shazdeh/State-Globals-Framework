@@ -6,6 +6,7 @@ namespace S_RefCount {
     struct Rule {
         TESGlobal* global = nullptr;
         std::optional<FormFilter> formFilter;
+        ValueMod mod{};
         float distance = 0;
         std::optional<bool> hostile;
         std::string levelComp;
@@ -17,8 +18,8 @@ namespace S_RefCount {
         if (Utils::IsPaused()) return;
         if (const auto& tes = TES::GetSingleton(); tes) {
             for (auto& item : globals) {
-                item.global->value = 0.0f;
-                tes->ForEachReferenceInRange(player, item.distance, [&item](TESObjectREFR* ref) {
+                float value = 0.0f;
+                tes->ForEachReferenceInRange(player, item.distance, [&item, &value](TESObjectREFR* ref) {
                     if (!ref || ref->IsDisabled() || ref->IsDeleted() || ref->IsPlayerRef())
                         return BSContainer::ForEachResult::kContinue;
                     auto base = ref->GetBaseObject();
@@ -33,9 +34,10 @@ namespace S_RefCount {
                     if (item.formFilter.has_value() && !ValidateFormFilter(base, item.formFilter.value()))
                         return BSContainer::ForEachResult::kContinue;
 
-                    item.global->value += 1;
+                    value += 1;
                     return BSContainer::ForEachResult::kContinue;
                 });
+                UpdateGlobalValue(item.global, item.mod);
             }
         }
     }
@@ -44,6 +46,7 @@ namespace S_RefCount {
         if (!item.contains("refcount")) return;
         auto& data = item.at("refcount");
         Rule rule;
+        rule.mod = ParseValueMod(data);
         if (data.contains("formFilter")) {
             rule.formFilter = ParseFormFilter(data.at("formFilter"));
             if (rule.formFilter == std::nullopt) return;

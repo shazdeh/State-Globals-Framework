@@ -4,6 +4,7 @@ namespace S_Read {
     struct Rule {
         TESGlobal* global = nullptr;
         std::optional<FormFilter> formFilter;
+        ValueMod mod{};
         std::optional<bool> skillBook;
         std::optional<bool> spellBook;
     };
@@ -16,7 +17,7 @@ namespace S_Read {
             if (item.spellBook.has_value() && book->TeachesSpell() != item.spellBook.value()) continue;
             if (item.formFilter.has_value() && !ValidateFormFilter(book, item.formFilter.value())) continue;
 
-            item.global->value += 1;
+            UpdateGlobalValue(item.global, item.mod);
         }
     }
 
@@ -32,6 +33,7 @@ namespace S_Read {
         if (!item.contains("read")) return;
         auto& data = item.at("read");
         Rule rule;
+        rule.mod = ParseValueMod(data);
         if (data.contains("formFilter")) {
             rule.formFilter = ParseFormFilter(data.at("formFilter"));
             if (rule.formFilter == std::nullopt) return;

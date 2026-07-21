@@ -8,12 +8,13 @@ namespace S_Equip {
     struct Rule {
         TESGlobal* global = nullptr;
         std::optional<FormFilter> formFilter;
-        bool weapon = true;
-        bool apparel = true;
+        ValueType valueType = ValueType::Count;
+        ValueMod mod{};
         std::optional<bool> isStolen;
         std::optional<bool> isEnchanted;
+        bool weapon = true;
+        bool apparel = true;
         // std::optional<bool> isPoisoned;
-        ValueType valueType = ValueType::Count;
     };
 
     std::vector<Rule> globals;
@@ -64,7 +65,7 @@ namespace S_Equip {
                     }
                 }
             }
-            item.global->value = value;
+            UpdateGlobalValue(item.global, item.mod, value, true);
         }
         bQueued = false;
     }
@@ -84,6 +85,7 @@ namespace S_Equip {
         if (!item.contains("equip")) return;
         auto& data = item.at("equip");
         Rule rule;
+        rule.mod = ParseValueMod(data);
         if (data.contains("formFilter")) {
             rule.formFilter = ParseFormFilter(data.at("formFilter"));
             if (rule.formFilter == std::nullopt) return;

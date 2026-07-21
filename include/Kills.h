@@ -9,7 +9,7 @@ namespace S_Kills {
         std::optional<FormFilter> formFilter;
         std::optional<bool> isCommanded;
         ValueType type = ValueType::Counter;
-        float mod = 1.0f;
+        ValueMod mod{};
     };
 
     std::vector<Rule> globals;
@@ -22,11 +22,7 @@ namespace S_Kills {
 
             switch (item.type) {
                 case ValueType::Counter:
-                    if (item.mod == 0) {
-                        item.global->value = 0;
-                    } else {
-                        item.global->value += item.mod;
-                    }
+                    UpdateGlobalValue(item.global, item.mod);
                     break;
                 case ValueType::TargetLevel:
                     item.global->value = victim->GetLevel();
@@ -56,6 +52,7 @@ namespace S_Kills {
         if (!item.contains("kill")) return;
         auto& data = item.at("kill");
         Rule rule;
+        rule.mod = ParseValueMod(data);
         if (data.contains("formFilter")) {
             rule.formFilter = ParseFormFilter(data.at("formFilter"));
             if (rule.formFilter == std::nullopt) return;
@@ -74,9 +71,6 @@ namespace S_Kills {
             } else if (value == "TargetLevelDiff") {
                 rule.type = ValueType::TargetLevelDiff;
             }
-        }
-        if (data.contains("mod")) {
-            rule.mod = data.at("mod").get<float>();
         }
         rule.global = global;
         globals.push_back(rule);
