@@ -43,8 +43,8 @@ namespace S_RefCount {
     }
 
     void parseJSON(const nlohmann::json_abi_v3_12_0::json& item, TESGlobal* global) {
-        if (!item.contains("refcount")) return;
-        auto& data = item.at("refcount");
+        if (!item.contains("refCount")) return;
+        auto& data = item.at("refCount");
         Rule rule;
         rule.mod = ParseValueMod(data);
         if (data.contains("formFilter")) {

@@ -11,7 +11,7 @@ PlayerCharacter* player;
 #include "SpellLearn.h"
 #include "Equip.h"
 #include "Kills.h"
-#include "MagicEffect.h"
+#include "ActiveEffect.h"
 #include "Inventory.h"
 #include "Magic.h"
 #include "Combat.h"
@@ -22,6 +22,7 @@ PlayerCharacter* player;
 #include "Read.h"
 #include "Hits.h"
 #include "Location.h"
+#include "Save.h"
 
 
 
@@ -35,7 +36,7 @@ static void ParseData(const json& data) {
 
         S_Magic::parseJSON(item, global);
         S_Inventory::parseJSON(item, global);
-        S_MagicEffect::parseJSON(item, global);
+        S_ActiveEffect::parseJSON(item, global);
         S_Equip::parseJSON(item, global);
         S_Kills::parseJSON(item, global);
         S_SpellLearn::parseJSON(item, global);
@@ -47,6 +48,7 @@ static void ParseData(const json& data) {
         S_Read::parseJSON(item, global);
         S_Pickpocket::parseJSON(item, global);
         S_Location::parseJSON(item, global);
+        S_Save::parseJSON(item, global);
     }
 }
 
@@ -85,11 +87,10 @@ void OnMessage(SKSE::MessagingInterface::Message* message) {
         player = PlayerCharacter::GetSingleton();
         LoadConfig();
         BuildRules();
-        // ConsoleLog::GetSingleton()->Print(fmt::format("Size of kills map: {}", Kills::globals.size()).c_str());
         S_Equip::SetupEvents();
         S_Kills::SetupEvents();
         S_SpellLearn::SetupEvents();
-        S_MagicEffect::SetupEvents();
+        S_ActiveEffect::SetupEvents();
         S_Inventory::SetupEvents();
         S_Magic::SetupEvents();
         S_Combat::SetupEvents();
@@ -100,6 +101,8 @@ void OnMessage(SKSE::MessagingInterface::Message* message) {
         S_Read::SetupEvents();
         S_Pickpocket::SetupEvents();
         S_Location::SetupEvents();
+    } else if (message->type == SKSE::MessagingInterface::kSaveGame) {
+        S_Save::Process();
     }
     if (message->type == SKSE::MessagingInterface::kNewGame ||
         message->type == SKSE::MessagingInterface::kPostLoadGame) {

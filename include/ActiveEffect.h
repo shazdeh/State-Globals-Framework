@@ -1,7 +1,8 @@
 #pragma once
 
-namespace S_MagicEffect {
+namespace S_ActiveEffect {
     bool bQueued;
+    std::unique_ptr<Ticker> ticker;
 
     enum Scope { Current = 0, Lifetime = 1 };
 
@@ -35,7 +36,6 @@ namespace S_MagicEffect {
         // I'm not sure what to do about that. :|
         std::unordered_set<MagicItem*> spells;
         for (auto newEffect : newEffects) {
-            MagicItem* spell = nullptr;
             for (auto* effect : *effects) {
                 if (effect->GetBaseObject() == newEffect) {
                     spells.insert(effect->spell);
@@ -78,6 +78,11 @@ namespace S_MagicEffect {
         bQueued = false;
     }
 
+    void Tick() {
+        if (Utils::IsPaused()) return;
+        Process();
+    }
+
     class EventSink : public BSTEventSink<TESMagicEffectApplyEvent> {
         BSEventNotifyControl ProcessEvent(const TESMagicEffectApplyEvent* event,
                                           BSTEventSource<TESMagicEffectApplyEvent>*) {
@@ -97,8 +102,8 @@ namespace S_MagicEffect {
     };
 
     void parseJSON(const nlohmann::json_abi_v3_12_0::json& item, TESGlobal* global) {
-        if (!item.contains("magiceffect")) return;
-        auto& data = item.at("magiceffect");
+        if (!item.contains("activeEffect")) return;
+        auto& data = item.at("activeEffect");
         Rule rule;
         rule.mod = ParseValueMod(data);
         if (data.contains("spellType")) {
@@ -120,6 +125,12 @@ namespace S_MagicEffect {
         if (!globals.empty()) {
             static EventSink g_sink;
             ScriptEventSourceHolder::GetSingleton()->AddEventSink<TESMagicEffectApplyEvent>(&g_sink);
+            // TESActiveEffectApplyRemoveEvent doesn't seem to properly trigger to detect
+            // AME being removed, so we poll.
+            if (!ticker) {
+                ticker = std::make_unique<Ticker>(Tick, std::chrono::milliseconds(100));
+                ticker->Start();
+            }
         }
     }
 }
