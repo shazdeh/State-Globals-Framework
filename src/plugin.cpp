@@ -23,6 +23,7 @@ PlayerCharacter* player;
 #include "Hits.h"
 #include "Location.h"
 #include "Save.h"
+#include "SoulTrap.h"
 
 
 
@@ -49,6 +50,7 @@ static void ParseData(const json& data) {
         S_Pickpocket::parseJSON(item, global);
         S_Location::parseJSON(item, global);
         S_Save::parseJSON(item, global);
+        S_SoulTrap::parseJSON(item, global);
     }
 }
 
@@ -101,6 +103,7 @@ void OnMessage(SKSE::MessagingInterface::Message* message) {
         S_Read::SetupEvents();
         S_Pickpocket::SetupEvents();
         S_Location::SetupEvents();
+        S_SoulTrap::SetupEvents();
     } else if (message->type == SKSE::MessagingInterface::kSaveGame) {
         S_Save::Process();
     }

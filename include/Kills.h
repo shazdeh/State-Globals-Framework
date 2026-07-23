@@ -5,7 +5,7 @@ namespace S_Kills {
 
     struct Rule {
         TESGlobal* global = nullptr;
-        TESForm* conditionForm = nullptr;
+        std::optional<ConditionFilter> condition;
         std::optional<FormFilter> formFilter;
         std::optional<bool> isCommanded;
         ValueType type = ValueType::Counter;
@@ -17,8 +17,8 @@ namespace S_Kills {
     void Process(Actor* victim) {
         for (auto& item : globals) {
             if (item.isCommanded.has_value() && victim->IsCommandedActor() != item.isCommanded) continue;
+            if (item.condition.has_value() && !ValidateConditionForm(item.condition.value())) continue;
             if (item.formFilter.has_value() && !ValidateFormFilter(victim, item.formFilter.value())) continue;
-            if (item.conditionForm && !ValidateConditionForm(item.conditionForm)) continue;
 
             switch (item.type) {
                 case ValueType::Counter:
@@ -28,7 +28,7 @@ namespace S_Kills {
                     item.global->value = victim->GetLevel();
                     break;
                 case ValueType::TargetLevelDiff:
-                    item.global->value = static_cast<float>(PlayerCharacter::GetSingleton()->GetLevel() - victim->GetLevel());
+                    item.global->value = static_cast<float>(player->GetLevel() - victim->GetLevel());
                     break;
             }
         }
@@ -57,9 +57,9 @@ namespace S_Kills {
             rule.formFilter = ParseFormFilter(data.at("formFilter"));
             if (rule.formFilter == std::nullopt) return;
         }
-        if (data.contains("conditionForm")) {
-            rule.conditionForm = Utils::GetForm<TESForm>(data.at("conditionForm").get<std::string>());
-            if (!rule.conditionForm) return;
+        if (data.contains("condition")) {
+            rule.condition = ParseConditionFilter(data.at("condition"));
+            if (rule.condition == std::nullopt) return;
         }
         if (data.contains("commanded")) {
             rule.isCommanded = data.at("commanded").get<bool>();

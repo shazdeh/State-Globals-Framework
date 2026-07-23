@@ -7,7 +7,7 @@ namespace S_Barter {
 
     struct Rule {
         TESGlobal* global;
-        TESForm* conditionForm = nullptr;
+        std::optional<ConditionFilter> condition;
         std::optional<FormFilter> formFilter;
         std::optional<FormFilter> vendorFilter;
         ValueMod mod{};
@@ -36,11 +36,11 @@ namespace S_Barter {
         for (auto& item : globals) {
             if ((isBuying && !item.buy) || (!isBuying && !item.sell)) continue;
             if (TESForm* form = TESForm::LookupByID(itemID); form) {    
+                if (item.condition.has_value() && !ValidateConditionForm(item.condition.value())) continue;
                 if (item.formFilter.has_value() && !ValidateFormFilter(form, item.formFilter.value()))
                     continue;
                 if (item.vendorFilter.has_value() && !ValidateFormFilter(currentVendor, item.vendorFilter.value()))
                     continue;
-                if (item.conditionForm && !ValidateConditionForm(item.conditionForm)) continue;
 
                 if (item.unique) count = 1;
                 UpdateGlobalValue(item.global, item.mod, (isBuying ? item.buyMult : item.sellMult) * static_cast<float>(count));
@@ -90,9 +90,9 @@ namespace S_Barter {
             rule.vendorFilter = ParseFormFilter(data.at("vendorFilter"));
             if (rule.vendorFilter == std::nullopt) return;
         }
-        if (data.contains("conditionForm")) {
-            rule.conditionForm = Utils::GetForm<TESForm>(data.at("conditionForm").get<std::string>());
-            if (!rule.conditionForm) return;
+        if (data.contains("condition")) {
+            rule.condition = ParseConditionFilter(data.at("condition"));
+            if (rule.condition == std::nullopt) return;
         }
         if (data.contains("unique")) {
             rule.unique = data.at("unique").get<bool>();

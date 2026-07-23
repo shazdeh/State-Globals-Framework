@@ -14,6 +14,10 @@ struct FormFilter {
     bool keywordMatchAll = false;
 };
 
+struct ConditionFilter {
+    TESForm* form = nullptr;
+};
+
 ValueMod ParseValueMod(const nlohmann::json_abi_v3_12_0::json& item) {
     ValueMod mod;
     if (item.contains("mod")) {
@@ -46,6 +50,18 @@ std::optional<FormFilter> ParseFormFilter(const nlohmann::json_abi_v3_12_0::json
     return filter;
 }
 
+std::optional<ConditionFilter> ParseConditionFilter(const nlohmann::json_abi_v3_12_0::json& data) {
+    ConditionFilter filter;
+    if (data.is_string()) {
+        filter.form = Utils::GetForm<TESForm>(data.get<std::string>());
+        if (!filter.form) return std::nullopt;
+    } else if (data.contains("form")) {
+        filter.form = Utils::GetForm<TESForm>(data.at("form").get<std::string>());
+        if (!filter.form) return std::nullopt;
+    }
+    return filter;
+}
+
 bool ValidateFormFilter(TESForm* a_form, FormFilter& a_filter) {
     if (!a_filter.formTypes.empty() && !a_filter.formTypes.contains(std::to_underlying(a_form->GetFormType())))
         return false;
@@ -63,16 +79,17 @@ bool ValidateFormFilter(TESForm* a_form, FormFilter& a_filter) {
     return true;
 }
 
-bool ValidateConditionForm(TESForm* a_form) {
-    switch (a_form->GetFormType()) {
+bool ValidateConditionForm(ConditionFilter& filter) {
+    
+    switch (filter.form->GetFormType()) {
         case FormType::Perk:
-            return player->HasPerk(a_form->As<BGSPerk>());
+            return player->HasPerk(filter.form->As<BGSPerk>());
         case FormType::MagicEffect:
-            return player->HasMagicEffect(a_form->As<EffectSetting>());
+            return player->HasMagicEffect(filter.form->As<EffectSetting>());
         case FormType::Faction:
-            return player->IsInFaction(a_form->As<TESFaction>());
+            return player->IsInFaction(filter.form->As<TESFaction>());
         case FormType::Location:
-            return Utils::MatchLocation(player->GetCurrentLocation(), a_form->As<BGSLocation>());
+            return Utils::MatchLocation(player->GetCurrentLocation(), filter.form->As<BGSLocation>());
     }
     return false;
 }

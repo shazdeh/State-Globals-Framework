@@ -1,6 +1,6 @@
 #pragma once
 
-namespace S_Magic {
+namespace S_SoulTrap {
     struct Rule {
         TESGlobal* global = nullptr;
         std::optional<ConditionFilter> condition;
@@ -10,31 +10,27 @@ namespace S_Magic {
 
     std::vector<Rule> globals;
 
-    void Process(FormID spellID) {
-        TESForm* spell = TESForm::LookupByID(spellID);
-        ConsoleLog::GetSingleton()->Print(fmt::format("Spell cast ID: {:x}, editor ID: {}", spell->GetFormID(), clib_util::editorID::get_editorID(spell)).c_str());
+    void Process(Actor* victim) {
         for (auto& item : globals) {
             if (item.condition.has_value() && !ValidateConditionForm(item.condition.value())) continue;
-            if (item.formFilter.has_value() && !ValidateFormFilter(spell, item.formFilter.value())) continue;
+            if (item.formFilter.has_value() && !ValidateFormFilter(victim, item.formFilter.value())) continue;
 
             UpdateGlobalValue(item.global, item.mod);
         }
     }
 
-    class EventSink : public BSTEventSink<TESSpellCastEvent> {
-        BSEventNotifyControl ProcessEvent(const TESSpellCastEvent* event, BSTEventSource<TESSpellCastEvent>*) {
-            if (!event->object) return BSEventNotifyControl::kContinue;
-            auto ref = event->object.get();
-            if (ref && ref->IsPlayerRef()) {
-                Process(event->spell);
+    class EventSink : public BSTEventSink<SoulsTrapped::Event> {
+        BSEventNotifyControl ProcessEvent(const SoulsTrapped::Event* event, BSTEventSource<SoulsTrapped::Event>*) {
+            if (event->trapper->IsPlayerRef()) {
+                Process(event->target);
             }
             return BSEventNotifyControl::kContinue;
         }
     };
 
     void parseJSON(const nlohmann::json_abi_v3_12_0::json& item, TESGlobal* global) {
-        if (!item.contains("spellcast")) return;
-        auto& data = item.at("spellcast");
+        if (!item.contains("soulTrap")) return;
+        auto& data = item.at("soulTrap");
         Rule rule;
         rule.mod = ParseValueMod(data);
         if (data.contains("formFilter")) {
@@ -45,7 +41,6 @@ namespace S_Magic {
             rule.condition = ParseConditionFilter(data.at("condition"));
             if (rule.condition == std::nullopt) return;
         }
-
         rule.global = global;
         globals.push_back(rule);
     }
@@ -53,7 +48,7 @@ namespace S_Magic {
     void SetupEvents() {
         if (!globals.empty()) {
             static EventSink g_sink;
-            ScriptEventSourceHolder::GetSingleton()->AddEventSink<TESSpellCastEvent>(&g_sink);
+            SoulsTrapped::GetEventSource()->AddEventSink<SoulsTrapped::Event>(&g_sink);
         }
     }
 }

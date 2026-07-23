@@ -1,6 +1,8 @@
 #pragma once
 
 namespace S_Hits {
+    enum ValueType { Counter = 0, TargetLevel = 1, TargetLevelDiff = 2 };
+
     struct HitData {
         bool process = false;
         TESObjectREFR* target;
@@ -17,17 +19,18 @@ namespace S_Hits {
 
     struct Rule {
         TESGlobal* global = nullptr;
-        TESForm* conditionForm = nullptr;
+        std::optional<ConditionFilter> condition;
         TESForm* sourceFilter = nullptr;
         std::optional<bool> sameTarget;
-        bool actorsOnly = true;
-        bool ignoreDead = true;
+        ValueMod mod{};
         std::optional<bool> sneakAttack;
         std::optional<bool> powerAttack;
         std::optional<bool> bashAttack;
         std::optional<bool> blocked;
+        ValueType valueType = ValueType::Counter;
         bool resetOnMismatchHit = false;
-        ValueMod mod{};
+        bool actorsOnly = true;
+        bool ignoreDead = true;
     };
 
     std::vector<Rule> hitGlobals;
@@ -43,48 +46,61 @@ namespace S_Hits {
 
     void _Process(std::vector<Rule>& arr, HitData& hit, TESObjectREFR* lastTarget) {
         for (auto& item : arr) {
-            if (hit.target->IsActor()) {
-                if (hit.target->IsDead() && item.ignoreDead) continue;
-            } else if (item.actorsOnly) {
-                continue;
+            switch (item.valueType) {
+                case ValueType::TargetLevel:
+                    if (hit.target->IsActor()) item.global->value = hit.target->As<Actor>()->GetLevel();
+                    break;
+
+                case ValueType::TargetLevelDiff:
+                    if (hit.target->IsActor())
+                        item.global->value =
+                            static_cast<float>(player->GetLevel() - hit.target->As<Actor>()->GetLevel());
+                    break;
+
+                default:
+                    if (hit.target->IsActor()) {
+                        if (hit.target->IsDead() && item.ignoreDead) continue;
+                    } else if (item.actorsOnly) {
+                        continue;
+                    }
+
+                    bool reset = false;
+                    bool matches = true;
+
+                    auto checkFlag = [&](const std::optional<bool>& expected, TESHitEvent::Flag flag) {
+                        if (!expected) return;
+
+                        if (hit.flags.all(flag) != *expected) {
+                            matches = false;
+                            if (item.resetOnMismatchHit) reset = true;
+                        }
+                    };
+
+                    checkFlag(item.sneakAttack, TESHitEvent::Flag::kSneakAttack);
+                    checkFlag(item.powerAttack, TESHitEvent::Flag::kPowerAttack);
+                    checkFlag(item.bashAttack, TESHitEvent::Flag::kBashAttack);
+                    checkFlag(item.blocked, TESHitEvent::Flag::kHitBlocked);
+
+                    if (item.condition.has_value() && !ValidateConditionForm(item.condition.value())) {
+                        matches = false;
+                    }
+                    if (item.sourceFilter && !Utils::ParseFormFilter(hit.source, item.sourceFilter)) {
+                        matches = false;
+                        if (item.resetOnMismatchHit) reset = true;
+                    }
+
+                    if (item.sameTarget.has_value()) {
+                        if (lastTarget && (hit.target == lastTarget) != *item.sameTarget) {
+                            matches = false;
+                            reset = true;
+                        }
+                    }
+
+                    if (reset)
+                        UpdateGlobalValue(item.global, item.mod, 0.0f);
+                    else if (matches)
+                        UpdateGlobalValue(item.global, item.mod);
             }
-
-            bool reset = false;
-            bool matches = true;
-
-            auto checkFlag = [&](const std::optional<bool>& expected, TESHitEvent::Flag flag) {
-                if (!expected) return;
-
-                if (hit.flags.all(flag) != *expected) {
-                    matches = false;
-                    if (item.resetOnMismatchHit) reset = true;
-                }
-            };
-
-            checkFlag(item.sneakAttack, TESHitEvent::Flag::kSneakAttack);
-            checkFlag(item.powerAttack, TESHitEvent::Flag::kPowerAttack);
-            checkFlag(item.bashAttack, TESHitEvent::Flag::kBashAttack);
-            checkFlag(item.blocked, TESHitEvent::Flag::kHitBlocked);
-
-            if (item.conditionForm && !ValidateConditionForm(item.conditionForm)) {
-                matches = false;
-            }
-            if (item.sourceFilter && !Utils::ParseFormFilter(hit.source, item.sourceFilter)) {
-                matches = false;
-                if (item.resetOnMismatchHit) reset = true;
-            }
-
-            if (item.sameTarget.has_value()) {
-                if (lastTarget && (hit.target == lastTarget) != *item.sameTarget) {
-                    matches = false;
-                    reset = true;
-                }
-            }
-
-            if (reset)
-                UpdateGlobalValue(item.global, item.mod, 0.0f);
-            else if (matches)
-                UpdateGlobalValue(item.global, item.mod);
         }
     }
 
@@ -163,9 +179,9 @@ namespace S_Hits {
                 rule.sourceFilter = Utils::GetForm<TESForm>(data.at("sourceFilter").get<std::string>());
                 if (!rule.sourceFilter) continue;
             }
-            if (data.contains("conditionForm")) {
-                rule.conditionForm = Utils::GetForm<TESForm>(data.at("conditionForm").get<std::string>());
-                if (!rule.conditionForm) return;
+            if (data.contains("condition")) {
+                rule.condition = ParseConditionFilter(data.at("condition"));
+                if (rule.condition == std::nullopt) return;
             }
             if (data.contains("sameTarget")) {
                 rule.sameTarget = data.at("sameTarget").get<bool>();
@@ -191,6 +207,14 @@ namespace S_Hits {
             }
             if (data.contains("blocked")) {
                 rule.blocked = data.at("blocked").get<bool>();
+            }
+            if (data.contains("valueType")) {
+                auto type = data.at("valueType").get<std::string>();
+                if (type == "TargetLevel") {
+                    rule.valueType = ValueType::TargetLevel;
+                } else if (type == "TargetLevelDiff") {
+                    rule.valueType = ValueType::TargetLevelDiff;
+                }
             }
             rule.global = global;
             (key == "hit" ? hitGlobals : hitTakenGlobals).push_back(rule);

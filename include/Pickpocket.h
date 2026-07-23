@@ -8,12 +8,13 @@ namespace S_Pickpocket {
 
     struct Rule {
         TESGlobal* global;
-        TESForm* conditionForm = nullptr; 
+        std::optional<ConditionFilter> condition;
         std::optional<FormFilter> formFilter;
         std::optional<FormFilter> targetFilter;
-        bool unique = false;
-        bool reverse = false;
         ValueMod mod{};
+        std::optional<bool> reverse;
+        float reverseMult = 1.0f;
+        bool unique = false;
     };
 
     std::vector<Rule> globals;
@@ -34,12 +35,14 @@ namespace S_Pickpocket {
     void Process() {
         for (auto& moveEvent : moveMap) {
             for (auto& item : globals) {
-                if (item.reverse != moveEvent.second.second) continue;
-                if (item.conditionForm && !ValidateConditionForm(item.conditionForm)) continue;
+                if (item.reverse.has_value() && item.reverse.value() != moveEvent.second.second) continue;
+                if (item.condition.has_value() && !ValidateConditionForm(item.condition.value())) continue;
                 if (item.formFilter.has_value() && !ValidateFormFilter(moveEvent.first, item.formFilter.value())) continue;
                 if (item.targetFilter.has_value() && !ValidateFormFilter(currentTarget, item.targetFilter.value())) continue;
 
-                UpdateGlobalValue(item.global, item.mod, item.unique ? 1.0f : moveEvent.second.first);
+                float value = item.unique ? 1.0f : moveEvent.second.first;
+                if (moveEvent.second.second) value *= item.reverseMult;
+                UpdateGlobalValue(item.global, item.mod, value);
             }
         }
         moveMap.clear();
@@ -93,9 +96,9 @@ namespace S_Pickpocket {
         if (data.contains("mod")) {
             rule.mod = ParseValueMod(item);
         }
-        if (data.contains("conditionForm")) {
-            rule.conditionForm = Utils::GetForm<TESForm>(data.at("conditionForm").get<std::string>());
-            if (!rule.conditionForm) return;
+        if (data.contains("condition")) {
+            rule.condition = ParseConditionFilter(data.at("condition"));
+            if (rule.condition == std::nullopt) return;
         }
         if (data.contains("formFilter")) {
             rule.formFilter = ParseFormFilter(data.at("formFilter"));
@@ -110,6 +113,9 @@ namespace S_Pickpocket {
         }
         if (data.contains("reverse")) {
             rule.reverse = data.at("reverse").get<bool>();
+        }
+        if (data.contains("reverseMult")) {
+            rule.reverseMult = data.at("reverseMult").get<float>();
         }
 
         rule.global = global;
