@@ -120,4 +120,7 @@ namespace S_Equip {
             ScriptEventSourceHolder::GetSingleton()->AddEventSink<TESEquipEvent>(&g_sink);
         }
     }
+
+    void OnLoadGame() { Process();
+    }
 }

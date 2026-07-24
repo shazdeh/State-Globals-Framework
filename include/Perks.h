@@ -87,4 +87,7 @@ namespace S_Perks {
             UI::GetSingleton()->AddEventSink<MenuOpenCloseEvent>(&g_sink);
         }
     }
+
+    void OnLoadGame() { Process();
+    }
 }

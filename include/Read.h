@@ -54,4 +54,11 @@ namespace S_Read {
             BooksRead::GetEventSource()->AddEventSink(&theSink);
         }
     }
+
+    void OnLoadGame() {
+        auto& all = TESDataHandler::GetSingleton()->GetFormArray<TESObjectBOOK>();
+        for (auto book : all) {
+            Process(book, book->TeachesSkill());
+        }
+    }
 }

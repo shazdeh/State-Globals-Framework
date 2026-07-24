@@ -20,7 +20,7 @@ namespace S_Hits {
     struct Rule {
         TESGlobal* global = nullptr;
         std::optional<ConditionFilter> condition;
-        TESForm* sourceFilter = nullptr;
+        std::optional<FormFilter> sourceFilter;
         std::optional<bool> sameTarget;
         ValueMod mod{};
         std::optional<bool> sneakAttack;
@@ -31,18 +31,11 @@ namespace S_Hits {
         bool resetOnMismatchHit = false;
         bool actorsOnly = true;
         bool ignoreDead = true;
+        bool ignoreTeammate = true;
     };
 
     std::vector<Rule> hitGlobals;
     std::vector<Rule> hitTakenGlobals;
-
-    TESForm* GetSourceForm(FormID sourceID) {
-        auto form = TESForm::LookupByID(sourceID);
-        if (form->Is(FormType::Enchantment)) {
-            // we need to find the weapon
-        }
-        return form;
-    }
 
     void _Process(std::vector<Rule>& arr, HitData& hit, TESObjectREFR* lastTarget) {
         for (auto& item : arr) {
@@ -59,7 +52,9 @@ namespace S_Hits {
 
                 default:
                     if (hit.target->IsActor()) {
-                        if (hit.target->IsDead() && item.ignoreDead) continue;
+                        Actor* targetActor = hit.target->As<Actor>();
+                        if (item.ignoreDead && targetActor->IsDead()) continue;
+                        if (item.ignoreTeammate && targetActor->IsPlayerTeammate()) continue;
                     } else if (item.actorsOnly) {
                         continue;
                     }
@@ -84,7 +79,7 @@ namespace S_Hits {
                     if (item.condition.has_value() && !ValidateConditionForm(item.condition.value())) {
                         matches = false;
                     }
-                    if (item.sourceFilter && !Utils::ParseFormFilter(hit.source, item.sourceFilter)) {
+                    if (item.sourceFilter.has_value() && !ValidateFormFilter(hit.source, item.sourceFilter.value())) {
                         matches = false;
                         if (item.resetOnMismatchHit) reset = true;
                     }
@@ -132,30 +127,34 @@ namespace S_Hits {
             return BSEventNotifyControl::kContinue;
         }
 
+        // TESHitEvent is an inconsistent mess
+        // 1. For enchanted/poisoned melee weapons it triggers multiple times, but the event.source is always
+        //    the WEAP form. In contrast, for enchanted/poisoned bows event.source points to the actual source (ENCH, ALCH or WEAP form)
+        // 2. On some stuff (like Calm spell) doesn't trigger, possibly the Harmful tag is required?
+        // 3. For staves, event.source is Unarmed, and event.projectile is empty too
+        // 4. event.projectile is not sent for unenchanted bows
         BSEventNotifyControl ProcessEvent(const TESHitEvent* event, BSTEventSource<TESHitEvent>*) {
             auto cause = event->cause.get();
             auto target = event->target.get();
-            if (cause && target) {
-                if (cause->IsPlayerRef()) {
-                    // auto av = target->As<Actor>()->AsActorValueOwner();
-                    // if (av) ConsoleLog::GetSingleton()->Print(fmt::format("Health: {}", av->GetActorValue(ActorValue::kHealth)).c_str());
-                    hitCache.target = target;
-                    hitCache.source = GetSourceForm(event->source);
-                    hitCache.projectile = event->projectile;
-                    hitCache.flags = event->flags;
-                    hitCache.process = true;
-                } else if (target->IsPlayerRef()) {
-                    hitTakenCache.target = cause;
-                    hitTakenCache.source = GetSourceForm(event->source);
-                    hitTakenCache.projectile = event->projectile;
-                    hitTakenCache.flags = event->flags;
-                    hitTakenCache.process = true;
-                }
+            if (cause && target && (cause->IsPlayerRef() || target->IsPlayerRef())) {
+                auto sourceForm = TESForm::LookupByID(event->source);
+                if (!sourceForm) return BSEventNotifyControl::kContinue;
+
+                if (bLogIDs) ConsoleLog::GetSingleton()->Print(fmt::format("Hit Event! Source: {:x} : {}, Projectile: {:x}", sourceForm->GetFormID(), clib_util::editorID::get_editorID(sourceForm), event->projectile).c_str());
+
+                HitData temp;
+                temp.target = cause->IsPlayerRef() ? target : cause;
+                temp.source = sourceForm;
+                temp.flags = event->flags;
+                temp.process = true;
+                temp.projectile = event->projectile;
+                (cause->IsPlayerRef() ? hitCache : hitTakenCache) = std::move(temp);
             }
             if (!bQueued) {
                 SKSE::GetTaskInterface()->AddTask(Process);
                 bQueued = true;
             }
+
             return BSEventNotifyControl::kContinue;
         }
 
@@ -176,8 +175,8 @@ namespace S_Hits {
             auto& data = item.at(key);
             Rule rule;
             if (data.contains("sourceFilter")) {
-                rule.sourceFilter = Utils::GetForm<TESForm>(data.at("sourceFilter").get<std::string>());
-                if (!rule.sourceFilter) continue;
+                rule.sourceFilter = ParseFormFilter(data.at("sourceFilter"));
+                if (rule.sourceFilter == std::nullopt) return;
             }
             if (data.contains("condition")) {
                 rule.condition = ParseConditionFilter(data.at("condition"));
@@ -192,6 +191,9 @@ namespace S_Hits {
             }
             if (data.contains("ignoreDead")) {
                 rule.ignoreDead = data.at("ignoreDead").get<bool>();
+            }
+            if (data.contains("ignoreTeammate")) {
+                rule.ignoreTeammate = data.at("ignoreTeammate").get<bool>();
             }
             if (data.contains("resetOnMismatchHit")) {
                 rule.resetOnMismatchHit = data.at("resetOnMismatchHit").get<bool>();

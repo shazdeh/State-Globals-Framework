@@ -91,4 +91,7 @@ namespace S_SpellLearn {
             SpellsLearned::GetEventSource()->AddEventSink<SpellsLearned::Event>(&spellSink);
         }
     }
+
+    void OnLoadGame() { Process();
+    }
 }

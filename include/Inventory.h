@@ -96,4 +96,7 @@ namespace S_Inventory {
             ScriptEventSourceHolder::GetSingleton()->AddEventSink<TESContainerChangedEvent>(&g_sink);
         }
     }
+
+    void OnLoadGame() { Process();
+    }
 }

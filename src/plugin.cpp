@@ -2,10 +2,12 @@
 #undef GetObject
 #include <unordered_set>
 #include "Utils.h"
+#include "SimpleIni.h"
 
-//BGSListForm* LastHitList;
 SpellItem* LastHitSpell;
 PlayerCharacter* player;
+TESObjectWEAP* Unarmed;
+bool bLogIDs = false;
 
 #include "Base.h"
 #include "SpellLearn.h"
@@ -24,9 +26,6 @@ PlayerCharacter* player;
 #include "Location.h"
 #include "Save.h"
 #include "SoulTrap.h"
-
-
-
 
 static void ParseData(const json& data) {
     for (const auto& item : data) {
@@ -70,23 +69,22 @@ static void BuildRules() {
 }
 
 bool LoadConfig() {
-    std::ifstream ifile{"Data/SKSE/Plugins/StateGlobalsFramework.json"};
-    if (!ifile) return false;
-    try {
-        json data = json::parse(ifile);
-        if (data.is_discarded()) return false;
-        //LastHitList = Utils::GetForm<BGSListForm>(data.at("LastHitList").get<std::string>());
-        LastHitSpell = Utils::GetForm<SpellItem>(data.at("LastHit").get<std::string>());
+    CSimpleIniA ini;
+    if (ini.LoadFile("Data/SKSE/Plugins/StateGlobalsFramework.ini") == SI_OK) {
+        LastHitSpell = Utils::GetForm<SpellItem>(ini.GetValue("Forms", "LastHitSpell", ""));
         if (!LastHitSpell) return false;
-    } catch (...) {
+        bLogIDs = ini.GetBoolValue("Debug", "LogIDs", false);
+    } else {
         return false;
     }
+
     return true;
 }
 
 void OnMessage(SKSE::MessagingInterface::Message* message) {
     if (message->type == SKSE::MessagingInterface::kDataLoaded) {
         player = PlayerCharacter::GetSingleton();
+        Unarmed = TESForm::LookupByID<TESObjectWEAP>(0x1F4);
         LoadConfig();
         BuildRules();
         S_Equip::SetupEvents();
@@ -106,10 +104,12 @@ void OnMessage(SKSE::MessagingInterface::Message* message) {
         S_SoulTrap::SetupEvents();
     } else if (message->type == SKSE::MessagingInterface::kSaveGame) {
         S_Save::Process();
-    }
-    if (message->type == SKSE::MessagingInterface::kNewGame ||
-        message->type == SKSE::MessagingInterface::kPostLoadGame) {
-        // Post-load
+    } else if (message->type == SKSE::MessagingInterface::kPostLoadGame) {
+        S_Equip::OnLoadGame();
+        S_Inventory::OnLoadGame();
+        S_Perks::OnLoadGame();
+        S_Read::OnLoadGame();
+        S_SpellLearn::OnLoadGame();
     }
 }
 

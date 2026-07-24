@@ -37,16 +37,21 @@ ValueMod ParseValueMod(const nlohmann::json_abi_v3_12_0::json& item) {
 
 std::optional<FormFilter> ParseFormFilter(const nlohmann::json_abi_v3_12_0::json& data) {
     FormFilter filter;
-    if (data.contains("form")) {
-        filter.formFilter = Utils::GetForm<TESForm>(data.at("form").get<std::string>());
+    if (data.is_string()) {
+        filter.formFilter = Utils::GetForm<TESForm>(data.get<std::string>());
         if (!filter.formFilter) return std::nullopt;
+    } else {
+        if (data.contains("form")) {
+            filter.formFilter = Utils::GetForm<TESForm>(data.at("form").get<std::string>());
+            if (!filter.formFilter) return std::nullopt;
+        }
+        if (data.contains("magicEffectKeyword")) {
+            if (!Utils::FillFormsArray<BGSKeyword>(data.at("magicEffectKeyword"), filter.magicEffectKeyword))
+                return std::nullopt;
+        }
+        if (data.contains("type")) Utils::FillSet<int>(data.at("type"), filter.formTypes);
+        if (data.contains("exclude")) filter.excludeFilter = data.at("exclude").get<bool>();
     }
-    if (data.contains("magicEffectKeyword")) {
-        if (!Utils::FillFormsArray<BGSKeyword>(data.at("magicEffectKeyword"), filter.magicEffectKeyword))
-            return std::nullopt;
-    }
-    if (data.contains("type")) Utils::FillSet<int>(data.at("type"), filter.formTypes);
-    if (data.contains("exclude")) filter.excludeFilter = data.at("exclude").get<bool>();
     return filter;
 }
 
@@ -58,6 +63,8 @@ std::optional<ConditionFilter> ParseConditionFilter(const nlohmann::json_abi_v3_
     } else if (data.contains("form")) {
         filter.form = Utils::GetForm<TESForm>(data.at("form").get<std::string>());
         if (!filter.form) return std::nullopt;
+    } else {
+        return std::nullopt;
     }
     return filter;
 }
@@ -80,7 +87,6 @@ bool ValidateFormFilter(TESForm* a_form, FormFilter& a_filter) {
 }
 
 bool ValidateConditionForm(ConditionFilter& filter) {
-    
     switch (filter.form->GetFormType()) {
         case FormType::Perk:
             return player->HasPerk(filter.form->As<BGSPerk>());
@@ -95,7 +101,8 @@ bool ValidateConditionForm(ConditionFilter& filter) {
 }
 
 void UpdateGlobalValue(TESGlobal* global, ValueMod& mod, float fMult = 1.0f, bool bOverride = false) {
-    //ConsoleLog::GetSingleton()->Print(fmt::format("global: {}, modvalue: {} with mult: {}", clib_util::editorID::get_editorID(global), mod.value, fMult).c_str());
+    if (bLogIDs) ConsoleLog::GetSingleton()->Print(fmt::format("Global update: {}, mod value: {} with mult: {}", clib_util::editorID::get_editorID(global), mod.value, fMult).c_str());
+
     if (mod.value == 0.0f || fMult == 0.0f) {
         global->value = 0;
     } else {
