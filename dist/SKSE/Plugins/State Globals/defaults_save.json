@@ -1,0 +1,13 @@
+[
+    {
+        "global" : "SGF_TimesSaved",
+        "save" : {}
+    },
+    {
+        "global" : "SGF_TimesSavedEncounter",
+        "save" : {},
+        "combatstart" : {
+            "mod" : 0
+        }
+    }
+]

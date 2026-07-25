@@ -1,0 +1,103 @@
+[
+    {
+        "global" : "SGF_ConsecutiveCrits",
+        "hit" : {
+            "crit" : true,
+            "sameTarget" : true
+        },
+        "combatend" : {
+            "mod" : 0
+        }
+    },
+    {
+        "global" : "SGF_ConsecutiveCritsMelee",
+        "hit" : {
+            "crit" : true,
+            "isMelee" : true,
+            "sameTarget" : true,
+            "resetOnMismatchHit" : true
+        },
+        "combatend" : {
+            "mod" : 0
+        }
+    },
+    {
+        "global" : "SGF_ConsecutiveCritsSneak",
+        "hit" : {
+            "crit" : true,
+            "sneakCrit" : true,
+            "sameTarget" : true,
+            "resetOnMismatchHit" : true
+        },
+        "combatend" : {
+            "mod" : 0
+        }
+    },
+    {
+        "global" : "SGF_ConsecutiveCritsRanged",
+        "hit" : {
+            "crit" : true,
+            "isRanged" : true,
+            "sameTarget" : true,
+            "resetOnMismatchHit" : true
+        },
+        "combatend" : {
+            "mod" : 0
+        }
+    },
+    {
+        "global" : "SGF_ComboCrits",
+        "hit" : {
+            "crit" : true,
+            "resetOnMismatchHit" : true
+        },
+        "combatend" : {
+            "mod" : 0
+        },
+        "hitTaken" : {
+            "mod" : 0
+        }
+    },
+    {
+        "global" : "SGF_ComboCritsMelee",
+        "hit" : {
+            "crit" : true,
+            "isMelee" : true,
+            "resetOnMismatchHit" : true
+        },
+        "combatend" : {
+            "mod" : 0
+        },
+        "hitTaken" : {
+            "mod" : 0
+        }
+    },
+    {
+        "global" : "SGF_ComboCritsSneak",
+        "hit" : {
+            "crit" : true,
+            "sneakCrit" : true,
+            "resetOnMismatchHit" : true
+        },
+        "combatend" : {
+            "mod" : 0
+        },
+        "hitTaken" : {
+            "mod" : 0
+        }
+    },
+    {
+        "global" : "SGF_ComboCritsRanged",
+        "hit" : {
+            "crit" : true,
+            "isRanged" : true,
+            "resetOnMismatchHit" : true
+        },
+        "combatend" : {
+            "mod" : 0
+        },
+        "hitTaken" : {
+            "mod" : 0
+        }
+    }
+]

@@ -1,0 +1,47 @@
+[
+    {
+        "global" : "SGF_BanditsKilled",
+        "kill" : {
+            "formFilter" : {
+                "form" : "BanditFaction"
+            },
+            "commanded" : false
+        }
+    },
+    {
+        "global" : "SGF_DragonsKilled",
+        "kill" : {
+            "formFilter" : {
+                "form" : "ActorTypeDragon"
+            }
+        }
+    },
+    {
+        "global" : "SGF_DragonPriestsKilled",
+        "kill" : {
+            "formFilter" : {
+                "form" : "DragonPriestFaction"
+            }
+        }
+    },
+    {
+        "global" : "SGF_JarlsKilled",
+        "kill" : {
+            "formFilter" : {
+                "form" : "JobJarlFaction"
+            }
+        }
+    },
+    {
+        "global" : "SGF_LastKillTargetLevel",
+        "kill" : {
+            "value" : "TargetLevel"
+        }
+    },
+    {
+        "global" : "SGF_LastKillTargetLevelDiff",
+        "kill" : {
+            "value" : "TargetLevelDiff"
+        }
+    }
+]

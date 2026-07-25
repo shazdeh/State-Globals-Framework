@@ -1,0 +1,149 @@
+[
+    {
+        "global" : "SGF_ConsecutiveHits",
+        "hit" : {
+            "sameTarget" : true
+        }
+    },
+    {
+        "global" : "SGF_ComboHits",
+        "hit" : {},
+        "hitTaken" : {
+            "mod" : 0
+        },
+        "combatstart" : {
+            "mod" : 0
+        }
+    },
+    {
+        "global" : "SGF_ComboHitsMelee",
+        "hit" : {
+            "isMelee" : true,
+            "resetOnMismatchHit" : true
+        },
+        "hitTaken" : {
+            "mod" : 0
+        },
+        "combatstart" : {
+            "mod" : 0
+        }
+    },
+    {
+        "global" : "SGF_ComboHitsSameTarget",
+        "hit" : {
+            "sameTarget" : true
+        },
+        "hitTaken" : {
+            "mod" : 0
+        },
+        "combatstart" : {
+            "mod" : 0
+        }
+    },
+    {
+        "global" : "SGF_ComboHitsTaken",
+        "hitTaken" : {},
+        "hit" : {
+            "mod" : 0
+        },
+        "combatstart" : {
+            "mod" : 0
+        }
+    },
+    {
+        "global" : "SGF_ComboHitsTakenSameTarget",
+        "hitTaken" : {
+            "sameTarget" : true
+        },
+        "hit" : {
+            "mod" : 0
+        },
+        "combatstart" : {
+            "mod" : 0
+        }
+    },
+    {
+        "global" : "SGF_ConsecutivePowerAttacks",
+        "hit" : {
+            "powerAttack" : true,
+            "sameTarget" : true,
+            "resetOnMismatchHit" : true
+        },
+        "combatend" : {
+            "mod" : 0
+        }
+    },
+    {
+        "global" : "SGF_ConsecutiveSneakAttacks",
+        "hit" : {
+            "sneakAttack" : true,
+            "sameTarget" : true,
+            "resetOnMismatchHit" : true
+        },
+        "combatend" : {
+            "mod" : 0
+        }
+    },
+    {
+        "global" : "SGF_ConsecutiveBashAttacks",
+        "hit" : {
+            "bashAttack" : true,
+            "sameTarget" : true,
+            "resetOnMismatchHit" : true
+        },
+        "combatend" : {
+            "mod" : 0
+        }
+    },
+    {
+        "global" : "SGF_HitsWithoutHealing",
+        "hit" : {},
+        "spellcast" : {
+            "formFilter" : {
+                "type" : [22, 46],
+                "magicEffectKeyword" : ["MagicAlchRestoreHealth", "MagicRestoreHealth"]
+            },
+            "mod" : 0
+        },
+        "combatend" : {
+            "mod" : 0
+        }
+    },
+    {
+        "global" : "SGF_ConsecutiveUnarmedStrikes",
+        "hit" : {
+            "bashAttack" : false,
+            "sameTarget" : true,
+            "resetOnMismatchHit" : true,
+            "sourceFilter" : "SGF_UnarmedList"
+        },
+        "combatend" : {
+            "mod" : 0
+        }
+    },
+    {
+        "global" : "SGF_ComboBlockedHitsTaken",
+        "hit" : {
+            "mod" : 0
+        },
+        "hitTaken" : {
+            "blocked" : true,
+            "resetOnMismatchHit" : true
+        },
+        "combatend" : {
+            "mod" : 0
+        }
+    },
+    {
+        "global" : "SGF_LastHitTargetLevel",
+        "hit" : {
+            "valueType" : "TargetLevel"
+        }
+    },
+    {
+        "global" : "SGF_LastHitTargetLevelDiff",
+        "hit" : {
+            "valueType" : "TargetLevelDiff"
+        }
+    }
+]

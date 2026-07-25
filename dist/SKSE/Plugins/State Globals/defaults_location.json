@@ -1,0 +1,11 @@
+[
+    {
+        "global" : "SGF_VampireLairsCleared",
+        "location" : {
+            "discover" : false,
+            "formFilter" : {
+                "form" : "LocTypeVampireLair"
+            }
+        }
+    }
+]

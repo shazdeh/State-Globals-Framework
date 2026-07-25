@@ -1,0 +1,86 @@
+[
+    {
+        "global" : "SGF_NoviceSpellsLearned",
+        "learnspell" : {
+            "skillLevel" : 0
+        }
+    },
+    {
+        "global" : "SGF_ApprenticeSpellsLearned",
+        "learnspell" : {
+            "skillLevel" : 25
+        }
+    },
+    {
+        "global" : "SGF_AdeptSpellsLearned",
+        "learnspell" : {
+            "skillLevel" : 50
+        }
+    },
+    {
+        "global" : "SGF_ExpertSpellsLearned",
+        "learnspell" : {
+            "skillLevel" : 75
+        }
+    },
+    {
+        "global" : "SGF_MasterSpellsLearned",
+        "learnspell" : {
+            "skillLevel" : 100
+        }
+    },
+    {
+        "global" : "SGF_ConjurationSpellsLearned",
+        "learnspell" : {
+            "skill" : 19
+        }
+    },
+    {
+        "global" : "SGF_DestructionSpellsLearned",
+        "learnspell" : {
+            "skill" : 20
+        }
+    },
+    {
+        "global" : "SGF_IllusionSpellsLearned",
+        "learnspell" : {
+            "skill" : 21
+        }
+    },
+    {
+        "global" : "SGF_RestorationSpellsLearned",
+        "learnspell" : {
+            "skill" : 22
+        }
+    },
+    {
+        "global" : "SGF_AlterationSpellsLearned",
+        "learnspell" : {
+            "skill" : 18
+        }
+    },
+    {
+        "global" : "SGF_RuneSpellsLearned",
+        "learnspell" : {
+            "formFilter" : {
+                "form" : "MagicRune"
+            }
+        }
+    },
+    {
+        "global" : "SGF_ElementalSummonSpellsLearned",
+        "learnspell" : {
+            "formFilter" : {
+                "form" : "SGF_ElementalSummonKeywordsList"
+            }
+        }
+    },
+    {
+        "global" : "SGF_NecromancySpellsLearned",
+        "learnspell" : {
+            "formFilter" : {
+                "form" : "MagicSummonUndead"
+            }
+        }
+    }
+]

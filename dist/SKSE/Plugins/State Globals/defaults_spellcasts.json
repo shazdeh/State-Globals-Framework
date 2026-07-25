@@ -1,0 +1,63 @@
+[
+    {
+        "global" : "SGF_SpellsCasted",
+        "spellcast" : {
+            "formFilter" : {
+                "type" : 22
+            }
+        }
+    },
+    {
+        "global" : "SGF_ScrollsUsed",
+        "spellcast" : {
+            "formFilter" : {
+                "type" : 23
+            }
+        }
+    },
+    {
+        "global" : "SGF_FireSpellsCasted",
+        "spellcast" : {
+            "formFilter" : {
+                "type" : [22, 23, 21],
+                "magicEffectKeyword" : "MagicDamageFire"
+            }
+        }
+    },
+    {
+        "global" : "SGF_FrostSpellsCasted",
+        "spellcast" : {
+            "formFilter" : {
+                "type" : [22, 23, 21],
+                "magicEffectKeyword" : "MagicDamageFrost"
+            }
+        }
+    },
+    {
+        "global" : "SGF_ShockSpellsCasted",
+        "spellcast" : {
+            "formFilter" : {
+                "type" : [22, 23, 21],
+                "magicEffectKeyword" : "MagicDamageShock"
+            }
+        }
+    },
+    {
+        "global" : "SGF_TimesWabbajacked",
+        "spellcast" : {
+            "formFilter" : {
+                "type" : 21,
+                "form" : "0x9B245~Skyrim.esm"
+            }
+        }
+    },
+    {
+        "global" : "SGF_TimesFusRoDahed",
+        "spellcast" : {
+            "formFilter" : {
+                "type" : 22,
+                "form" : "SGF_UnrelentingForceList"
+            }
+        }
+    }
+]

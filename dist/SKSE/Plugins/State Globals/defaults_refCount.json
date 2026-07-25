@@ -1,0 +1,54 @@
+[
+    {
+        "global" : "SGF_HostilesNear",
+        "refCount" : {
+            "formFilter" : {
+                "type" : 43
+            },
+            "distance" : 300,
+            "hostile" : true
+        }
+    },
+    {
+        "global" : "SGF_HostilesMidway",
+        "refCount" : {
+            "distance" : 600,
+            "formFilter" : {
+                "type" : 43
+            },
+            "hostile" : true
+        }
+    },
+    {
+        "global" : "SGF_HostilesFar",
+        "refCount" : {
+            "distance" : 900,
+            "formFilter" : {
+                "type" : 43
+            },
+            "hostile" : true
+        }
+    },
+    {
+        "global" : "SGF_HostilesHigherLevelNearby",
+        "refCount" : {
+            "distance" : 900,
+            "formFilter" : {
+                "type" : 43
+            },
+            "hostile" : true,
+            "level" : "<"
+        }
+    },
+    {
+        "global" : "SGF_HostilesLowerLevelNearby",
+        "refCount" : {
+            "distance" : 900,
+            "formFilter" : {
+                "type" : 43
+            },
+            "hostile" : true,
+            "level" : ">"
+        }
+    }
+]

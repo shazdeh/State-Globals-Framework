@@ -1,0 +1,34 @@
+[
+    {
+        "global" : "SGF_PlayerDiseaseCount",
+        "activeEffect" : {
+            "spellType" : 1
+        }
+    },
+    {
+        "global" : "SGF_ActivePotionEffectsCount",
+        "activeEffect" : {
+            "spellType" : 7
+        }
+    },
+    {
+        "global" : "SGF_BeggarsHelped",
+        "activeEffect" : {
+            "formFilter" : {
+                "spellType" : 0,
+                "magicEffectKeyword" : "USKPGiftOfCharity"
+            },
+            "scope" : "lifetime"
+        }
+    },
+    {
+        "global" : "SGF_DivineBlessings",
+        "activeEffect" : {
+            "formFilter" : {
+                "spellType" : 0,
+                "magicEffectKeyword" : "MagicBlessing"
+            },
+            "scope" : "lifetime"
+        }
+    }
+]

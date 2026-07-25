@@ -1,0 +1,22 @@
+[
+    {
+        "global" : "SGF_PickpocketedGold",
+        "pickpocket" : {
+            "formFilter" : {
+                "form" : "Gold001"
+            },
+            "reverseMult" : -1.0
+        }
+    },
+    {
+        "global" : "SGF_PoisonedByPickpocketing",
+        "pickpocket" : {
+            "reverse" : true,
+            "unique" : true,
+            "formFilter" : {
+                "form" : "VendorItemPoison"
+            },
+            "condition" : "Poisoned"
+        }
+    }
+]

@@ -1,0 +1,10 @@
+[
+    {
+        "global" : "SGF_SoulTrappedHumans",
+        "soulTrap" : {
+            "formFilter" : {
+                "form" : "ActorTypeNPC"
+            }
+        }
+    }
+]

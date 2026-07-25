@@ -1,0 +1,31 @@
+[
+    {
+        "global" : "SGF_ItemsBought",
+        "barter" : {
+            "sell" : false
+        }
+    },
+    {
+        "global" : "SGF_ItemsSold",
+        "barter" : {
+            "buy" : false
+        }
+    },
+    {
+        "global" : "SGF_SkoomaTraded",
+        "barter" : {
+            "formFilter" : {
+                "form" : "0x57A7A~Skyrim.esm"
+            }
+        }
+    },
+    {
+        "global" : "SGF_TradesWithKhajitCaravans",
+        "barter" : {
+            "unique" : true,
+            "vendorFilter" : {
+                "form" : "CaravanMerchant"
+            }
+        }
+    }
+]

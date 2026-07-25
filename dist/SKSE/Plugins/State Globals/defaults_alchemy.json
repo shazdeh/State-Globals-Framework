@@ -1,0 +1,68 @@
+[
+    {
+        "global" : "SGF_PoisonHits",
+        "spellcast" : {
+            "formFilter" : {
+                "type" : 46,
+                "form" : "VendorItemPoison"
+            }
+        }
+    },
+    {
+        "global" : "SGF_HealingPotionsUsed",
+        "spellcast" : {
+            "formFilter" : {
+                "type" : 46,
+                "form" : "VendorItemPotion",
+                "magicEffectKeyword" : "MagicAlchRestoreHealth"
+            }
+        }
+    },
+    {
+        "global" : "SGF_StaminaPotionsUsed",
+        "spellcast" : {
+            "formFilter" : {
+                "type" : 46,
+                "form" : "VendorItemPotion",
+                "magicEffectKeyword" : "MagicAlchRestoreStamina"
+            }
+        }
+    },
+    {
+        "global" : "SGF_MagickaPotionsUsed",
+        "spellcast" : {
+            "formFilter" : {
+                "type" : 46,
+                "form" : "VendorItemPotion",
+                "magicEffectKeyword" : "MagicAlchRestoreMagicka"
+            }
+        }
+    },
+    {
+        "global" : "SGF_AlcoholicDrinksConsumed",
+        "spellcast" : {
+            "formFilter" : {
+                "type" : 46,
+                "form" : "AlcoholicDrinksList"
+            }
+        }
+    },
+    {
+        "global" : "SGF_NirnrootsEaten",
+        "spellcast" : {
+            "formFilter" : {
+                "type" : 30,
+                "form" : "isNirnroot"
+            }
+        }
+    },
+    {
+        "global" : "SGF_CheesesEaten",
+        "spellcast" : {
+            "formFilter" : {
+                "type" : 46,
+                "form" : "SGF_CheeseList"
+            }
+        }
+    }
+]

@@ -1,0 +1,19 @@
+[
+    {
+        "global" : "SGF_BooksRead",
+        "read" : {
+            "spellBook" : false,
+            "formFilter" : {
+                "form" : "VendorItemBook"
+            }
+        }
+    },
+    {
+        "global" : "SGF_RecipesRead",
+        "read" : {
+            "formFilter" : {
+                "form" : "VendorItemRecipe"
+            }
+        }
+    }
+]

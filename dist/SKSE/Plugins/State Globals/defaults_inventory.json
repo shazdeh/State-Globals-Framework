@@ -1,0 +1,87 @@
+[
+    {
+        "global" : "SGF_TotalItemsCarrying",
+        "inventory" : {
+            "formFilter" : {
+                "form" : "SGF_CurrencyList",
+                "exclude" : true
+            }
+        }
+    },
+    {
+        "global" : "SGF_TotalUniqueItemsCarrying",
+        "inventory" : {
+            "formFilter" : {
+                "form" : "SGF_CurrencyList",
+                "exclude" : true
+            },
+            "unique" : true
+        }
+    },
+    {
+        "global" : "SGF_TotalPotionsAndPoisonsCarrying",
+        "inventory" : {
+            "formFilter" : {
+                "type" : 46,
+                "form" : "SGF_AlchemyItems"
+            }
+        }
+    },
+    {
+        "global" : "SGF_TotalEnchantedItemsCarrying",
+        "inventory" : {
+            "formFilter" : {
+                "type" : [41, 26]
+            },
+            "enchanted" : true
+        }
+    },
+    {
+        "global" : "SGF_TotalStolenItemsCarrying",
+        "inventory" : {
+            "stolen" : true
+        }
+    },
+    {
+        "global" : "SGF_TotalWeaponsCarrying",
+        "inventory" : {
+            "formFilter" : {
+                "type" : 41
+            }
+        }
+    },
+    {
+        "global" : "SGF_TotalApparelsCarrying",
+        "inventory" : {
+            "formFilter" : {
+                "type" : 26
+            }
+        }
+    },
+    {
+        "global" : "SGF_CarriedApparelsWeight",
+        "inventory" : {
+            "formFilter" : {
+                "type" : 26
+            },
+            "valueType" : "weight"
+        }
+    },
+    {
+        "global" : "SGF_CarriedWeaponsWeight",
+        "inventory" : {
+            "formFilter" : {
+                "type" : 41
+            },
+            "valueType" : "weight"
+        }
+    },
+    {
+        "global" : "SGF_CarriedDaedricArtifacts",
+        "inventory" : {
+            "formFilter" : {
+                "form" : "DaedricArtifact"
+            }
+        }
+    }
+]

@@ -1,0 +1,68 @@
+[
+    {
+        "global" : "SGF_HitsLandedEncounter",
+        "hit" : {},
+        "combatend" : {
+            "mod" : 0
+        }
+    },
+    {
+        "global" : "SGF_HitsTakenEncounter",
+        "hitTaken" : {},
+        "combatend" : {
+            "mod" : 0
+        }
+    },
+    {
+        "global" : "SGF_CritHitsEncounter",
+        "hit" : {
+            "crit" : true
+        },
+        "combatend" : {
+            "mod" : 0
+        }
+    },
+    {
+        "global" : "SGF_KillsEncounter",
+        "kill" : {},
+        "combatstart" : { "mod" : 0 }
+    },
+    {
+        "global" : "SGF_ComboKillsEncounter",
+        "kill" : {},
+        "hitTaken" : { "mod" : 0 },
+        "combatstart" : { "mod" : 0 }
+    },
+    {
+        "global" : "SGF_SpellsCastedEncounter",
+        "spellcast" : {
+            "formFilter" : {
+                "type" : 22
+            }
+        },
+        "combatstart" : { "mod" : 0 },
+        "combatend" : { "mod" : 0 }
+    },
+    {
+        "global" : "SGF_PotionsUsedEncounter",
+        "spellcast" : {
+            "formFilter" : {
+                "type" : 46,
+                "form" : "VendorItemPotion"
+            }
+        },
+        "combatstart" : { "mod" : 0 },
+        "combatend" : { "mod" : 0 }
+    },
+    {
+        "global" : "SGF_UsedHealingEncounter",
+        "spellcast" : {
+            "formFilter" : {
+                "type" : [22, 46],
+                "magicEffectKeyword" : ["MagicAlchRestoreHealth", "MagicRestoreHealth"]
+            }
+        },
+        "combatstart" : { "mod" : 0 },
+        "combatend" : { "mod" : 0 }
+    }
+]
