@@ -101,6 +101,7 @@ namespace S_Hits {
 
                     bool reset = false;
                     bool matches = true;
+                    float resetValue = 0.0f;
 
                     auto checkFlag = [&](const std::optional<bool>& expected, TESHitEvent::Flag flag) {
                         if (!expected) return;
@@ -124,13 +125,6 @@ namespace S_Hits {
                         if (item.resetOnMismatchHit) reset = true;
                     }
 
-                    if (item.sameTarget.has_value()) {
-                        if (lastTarget && (hit.target == lastTarget) != *item.sameTarget) {
-                            matches = false;
-                            reset = true;
-                        }
-                    }
-
                     // weapon flags: IsMelee, IsRanged, IsBound
                     if (
                         (item.isMelee.has_value() && (!sourceWeapon || sourceWeapon->IsMelee() != item.isMelee.value())) ||
@@ -143,8 +137,20 @@ namespace S_Hits {
                         if (item.resetOnMismatchHit) reset = true;
                     }
 
+                    if (item.sameTarget.has_value()) {
+                        if (lastTarget && (hit.target == lastTarget) != *item.sameTarget) {
+                            // messy but what it does: if every other condition was matched without an issue but it's not
+                            // the same target, a hit has landed still, so the value should reset to 1 and not 0.
+                            if (matches && !reset) {
+                                resetValue = 1.0f;
+                            }
+                            matches = false;
+                            reset = true;
+                        }
+                    }
+
                     if (reset)
-                        UpdateGlobalValue(item.global, item.mod, 0.0f);
+                        UpdateGlobalValue(item.global, item.mod, resetValue, true);
                     else if (matches)
                         UpdateGlobalValue(item.global, item.mod);
             }

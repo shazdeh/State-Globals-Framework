@@ -1,4 +1,5 @@
 struct ValueMod {
+    float base = 0.0f;
     float value = 1.0;
     std::optional<float> min;
     std::optional<float> max;
@@ -30,6 +31,7 @@ ValueMod ParseValueMod(const nlohmann::json_abi_v3_12_0::json& item) {
             if (data.contains("max")) mod.max = data.at("max").get<float>();
             if (data.contains("resetOnMin")) mod.resetOnMin = data.at("resetOnMin").get<bool>();
             if (data.contains("resetOnMax")) mod.resetOnMax = data.at("resetOnMax").get<bool>();
+            if (data.contains("base")) mod.base = data.at("base").get<float>();
         }
     }
     return mod;
@@ -110,12 +112,12 @@ void UpdateGlobalValue(TESGlobal* global, ValueMod& mod, float fMult = 1.0f, boo
         float newValue = (bOverride ? 0.0f : global->value) + (mod.value * fMult);
         if (mod.max.has_value() && newValue >= mod.max.value()) {
             if (mod.resetOnMax)
-                newValue = 0;
+                newValue = mod.base;
             else
                 newValue = mod.max.value();
         } else if (mod.min.has_value() && newValue <= mod.min.value()) {
             if (mod.resetOnMin)
-                newValue = 0;
+                newValue = mod.base;
             else
                 newValue = mod.min.value();
         }
