@@ -1,3 +1,6 @@
+#### State Globals Framework
+Mod is available for free on [NexusMods](https://www.nexusmods.com/skyrimspecialedition/mods/185199).
+
 #### YOU NEED CMAKE < 3.5 !
 
 #### WINDOWS ENVIRONMENT VARIABLES TO SET
