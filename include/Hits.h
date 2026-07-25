@@ -16,6 +16,8 @@ namespace S_Hits {
     TESObjectREFR* lastHitTakenTarget = nullptr;
     HitData hitCache;
     HitData hitTakenCache;
+    bool lastHitWasCrit = false;
+    bool lastHitWasSneakCrit = false;
 
     struct Rule {
         TESGlobal* global = nullptr;
@@ -30,6 +32,8 @@ namespace S_Hits {
         std::optional<bool> isMelee;
         std::optional<bool> isBound;
         std::optional<bool> isRanged;
+        std::optional<bool> crit;
+        std::optional<bool> sneakCrit;
         ValueType valueType = ValueType::Counter;
         bool resetOnMismatchHit = false;
         bool actorsOnly = true;
@@ -117,6 +121,16 @@ namespace S_Hits {
                     checkFlag(item.bashAttack, TESHitEvent::Flag::kBashAttack);
                     checkFlag(item.blocked, TESHitEvent::Flag::kHitBlocked);
 
+                    // crits
+                    if (item.crit.has_value() && lastHitWasCrit != item.crit.value()) {
+                        matches = false;
+                        if (item.resetOnMismatchHit) reset = true;
+                    }
+                    if (item.sneakCrit.has_value() && lastHitWasSneakCrit != item.sneakCrit.value()) {
+                        matches = false;
+                        if (item.resetOnMismatchHit) reset = true;
+                    }
+
                     if (item.condition.has_value() && !ValidateConditionForm(item.condition.value())) {
                         matches = false;
                     }
@@ -174,6 +188,8 @@ namespace S_Hits {
             hitTakenCache.process = false;
             lastHitTakenTarget = hitTakenCache.target;
         }
+        lastHitWasCrit = false;
+        lastHitWasSneakCrit = false;
         bQueued = false;
     }
 
@@ -181,7 +197,11 @@ namespace S_Hits {
                       public BSTEventSink<CriticalHit::Event>,
                       public BSTEventSink < TESCellAttachDetachEvent> {
         BSEventNotifyControl ProcessEvent(const CriticalHit::Event* event, BSTEventSource<CriticalHit::Event>*) {
-            ConsoleLog::GetSingleton()->Print(fmt::format("Crit hit, sneak: {}", event->sneakHit).c_str());
+            if (event->aggressor->IsPlayerRef()) {
+                if (bLogIDs) ConsoleLog::GetSingleton()->Print(fmt::format("Crit Hit, weapon: {}, sneak: {}", clib_util::editorID::get_editorID(event->weapon), event->sneakHit).c_str());
+                lastHitWasCrit = true;
+                if (event->sneakHit) lastHitWasSneakCrit = true;
+            }
             return BSEventNotifyControl::kContinue;
         }
 
@@ -274,6 +294,12 @@ namespace S_Hits {
             }
             if (data.contains("isRanged")) {
                 rule.isRanged = data.at("isRanged").get<bool>();
+            }
+            if (data.contains("crit")) {
+                rule.crit = data.at("crit").get<bool>();
+            }
+            if (data.contains("sneakCrit")) {
+                rule.sneakCrit = data.at("sneakCrit").get<bool>();
             }
             if (data.contains("valueType")) {
                 auto type = data.at("valueType").get<std::string>();
