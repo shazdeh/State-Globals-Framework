@@ -1,0 +1,61 @@
+[
+    {
+        "global" : "BrutalFist_Counter",
+        "hit" : {
+            "bashAttack" : false,
+            "sameTarget" : true,
+            "resetOnMismatchHit" : true,
+            "sourceFilter" : "SGF_UnarmedList",
+            "mod" : {
+                "max" : 3,
+                "resetOnMax" : true
+            }
+        },
+        "combatend" : {
+            "mod" : 0
+        }
+    },
+    {
+        "global" : "RelentlessBash_Counter",
+        "hit" : {
+            "bashAttack" : true,
+            "sameTarget" : true,
+            "resetOnMismatchHit" : true,
+            "mod" : {
+                "max" : 3,
+                "resetOnMax" : true
+            }
+        },
+        "combatend" : {
+            "mod" : 0
+        }
+    },
+    {
+        "global" : "BattleTrance1H_Counter",
+        "hit" : {
+            "bashAttack" : false,
+            "resetOnMismatchHit" : true,
+            "weaponSkill" : 6
+        },
+        "hitTaken" : {
+            "mod" : 0
+        },
+        "combatend" : {
+            "mod" : 0
+        }
+    },
+    {
+        "global" : "BattleTrance2H_Counter",
+        "hit" : {
+            "bashAttack" : false,
+            "resetOnMismatchHit" : true,
+            "weaponSkill" : 7
+        },
+        "hitTaken" : {
+            "mod" : 0
+        },
+        "combatend" : {
+            "mod" : 0
+        }
+    }
+]

@@ -1,0 +1,28 @@
+{
+    "additions": [
+        {
+            "perk": "0x801|SGF Perks Demo.esp",
+            "skill": "0x44C|Skyrim.esm",
+            "x": 3,
+            "y": 0.0
+        },
+        {
+            "perk": "0x806|SGF Perks Demo.esp",
+            "skill": "0x44F|Skyrim.esm",
+            "x": 4,
+            "y": 0.0
+        },
+        {
+            "perk": "0x80A|SGF Perks Demo.esp",
+            "skill": "0x44C|Skyrim.esm",
+            "x": 4,
+            "y": 0.0
+        },
+        {
+            "perk": "0x80B|SGF Perks Demo.esp",
+            "skill": "0x44D|Skyrim.esm",
+            "x": 4,
+            "y": 0.0
+        }
+    ]
+}
