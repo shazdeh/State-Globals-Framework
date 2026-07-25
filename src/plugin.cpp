@@ -64,6 +64,7 @@ static void BuildRules() {
             if (data.is_discarded()) continue;
             ParseData(data);
         } catch (...) {
+            logger::warn("Error in parsing JSON file {}", file.path().string());
         }
     }
 }

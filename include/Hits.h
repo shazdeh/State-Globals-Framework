@@ -32,8 +32,11 @@ namespace S_Hits {
         std::optional<bool> isMelee;
         std::optional<bool> isBound;
         std::optional<bool> isRanged;
+        std::optional<bool> isBow;
+        std::optional<bool> isCrossbow;
         std::optional<bool> crit;
         std::optional<bool> sneakCrit;
+        std::optional<ActorValue> weaponSkill; // @todo: this should be a vector
         ValueType valueType = ValueType::Counter;
         bool resetOnMismatchHit = false;
         bool actorsOnly = true;
@@ -139,14 +142,24 @@ namespace S_Hits {
                         if (item.resetOnMismatchHit) reset = true;
                     }
 
-                    // weapon flags: IsMelee, IsRanged, IsBound
+                    // weapon flags: IsMelee, IsRanged, IsBow, IsCrossbow, IsBound
                     if (
                         (item.isMelee.has_value() && (!sourceWeapon || sourceWeapon->IsMelee() != item.isMelee.value())) ||
                         (item.isRanged.has_value() &&
                          (!sourceWeapon || sourceWeapon->IsRanged() != item.isRanged.value())) ||
+                        (item.isBow.has_value() && (!sourceWeapon || sourceWeapon->IsBow() != item.isBow.value())) ||
+                        (item.isCrossbow.has_value() &&
+                         (!sourceWeapon || sourceWeapon->IsCrossbow() != item.isCrossbow.value())) ||
                         (item.isBound.has_value() &&
                          (!sourceWeapon || sourceWeapon->IsBound() != item.isBound.value()))
                     ) {
+                        matches = false;
+                        if (item.resetOnMismatchHit) reset = true;
+                    }
+
+                    // weapon skill
+                    if (item.weaponSkill.has_value() &&
+                        (!sourceWeapon || !sourceWeapon->weaponData.skill.all(item.weaponSkill.value()))) {
                         matches = false;
                         if (item.resetOnMismatchHit) reset = true;
                     }
@@ -295,11 +308,20 @@ namespace S_Hits {
             if (data.contains("isRanged")) {
                 rule.isRanged = data.at("isRanged").get<bool>();
             }
+            if (data.contains("isBow")) {
+                rule.isBow = data.at("isBow").get<bool>();
+            }
+            if (data.contains("isCrossbow")) {
+                rule.isCrossbow = data.at("isCrossbow").get<bool>();
+            }
             if (data.contains("crit")) {
                 rule.crit = data.at("crit").get<bool>();
             }
             if (data.contains("sneakCrit")) {
                 rule.sneakCrit = data.at("sneakCrit").get<bool>();
+            }
+            if (data.contains("weaponSkill")) {
+                rule.weaponSkill = static_cast<ActorValue>(data.at("weaponSkill").get<int>());
             }
             if (data.contains("valueType")) {
                 auto type = data.at("valueType").get<std::string>();
