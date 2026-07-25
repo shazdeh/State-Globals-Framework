@@ -16,13 +16,13 @@ bool bLogIDs = false;
 #include "ActiveEffect.h"
 #include "Inventory.h"
 #include "Magic.h"
+#include "Hits.h"
 #include "Combat.h"
 #include "Perks.h"
 #include "Barter.h"
 #include "Pickpocket.h"
 #include "RefCount.h"
 #include "Read.h"
-#include "Hits.h"
 #include "Location.h"
 #include "Save.h"
 #include "SoulTrap.h"
@@ -73,6 +73,7 @@ bool LoadConfig() {
     if (ini.LoadFile("Data/SKSE/Plugins/StateGlobalsFramework.ini") == SI_OK) {
         LastHitSpell = Utils::GetForm<SpellItem>(ini.GetValue("Forms", "LastHitSpell", ""));
         if (!LastHitSpell) return false;
+        Unarmed = Utils::GetForm<TESObjectWEAP>(ini.GetValue("Forms", "Unarmed", ""));
         bLogIDs = ini.GetBoolValue("Debug", "LogIDs", false);
     } else {
         return false;
@@ -84,7 +85,6 @@ bool LoadConfig() {
 void OnMessage(SKSE::MessagingInterface::Message* message) {
     if (message->type == SKSE::MessagingInterface::kDataLoaded) {
         player = PlayerCharacter::GetSingleton();
-        Unarmed = TESForm::LookupByID<TESObjectWEAP>(0x1F4);
         LoadConfig();
         BuildRules();
         S_Equip::SetupEvents();

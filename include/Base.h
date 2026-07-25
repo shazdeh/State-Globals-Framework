@@ -52,6 +52,9 @@ std::optional<FormFilter> ParseFormFilter(const nlohmann::json_abi_v3_12_0::json
         if (data.contains("type")) Utils::FillSet<int>(data.at("type"), filter.formTypes);
         if (data.contains("exclude")) filter.excludeFilter = data.at("exclude").get<bool>();
     }
+    if (!filter.formFilter && filter.magicEffectKeyword.empty() && filter.formTypes.empty()) {
+        return std::nullopt;
+    }
     return filter;
 }
 
@@ -101,8 +104,6 @@ bool ValidateConditionForm(ConditionFilter& filter) {
 }
 
 void UpdateGlobalValue(TESGlobal* global, ValueMod& mod, float fMult = 1.0f, bool bOverride = false) {
-    if (bLogIDs) ConsoleLog::GetSingleton()->Print(fmt::format("Global update: {}, mod value: {} with mult: {}", clib_util::editorID::get_editorID(global), mod.value, fMult).c_str());
-
     if (mod.value == 0.0f || fMult == 0.0f) {
         global->value = 0;
     } else {

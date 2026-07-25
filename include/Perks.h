@@ -44,13 +44,12 @@ namespace S_Perks {
 
         for (auto& item : globals) {
             float value = 0.0f;
-            for (auto av : item.skills) {
-                auto it = map.find(av);
-                if (it != map.end()) {
-                    for (auto perk : it->second) {
-                        if (item.formFilter.has_value() && !ValidateFormFilter(perk, item.formFilter.value())) continue;
-                        if (item.owned == player->HasPerk(perk)) value++;
-                    }
+            for (int i = 6; i < 24; i++) {
+                ActorValue av = static_cast<ActorValue>(i);
+                if (!item.skills.empty() && !item.skills.contains(av)) continue;
+                for (auto perk : map.at(av)) {
+                    if (item.formFilter.has_value() && !ValidateFormFilter(perk, item.formFilter.value())) continue;
+                    if (item.owned == player->HasPerk(perk)) value++;
                 }
             }
             UpdateGlobalValue(item.global, item.mod, value, true);
@@ -69,10 +68,11 @@ namespace S_Perks {
     void parseJSON(const nlohmann::json_abi_v3_12_0::json& item, TESGlobal* global) {
         if (!item.contains("perk")) return;
         auto& data = item.at("perk");
-        if (!data.contains("skill")) return;
         Rule rule;
         rule.mod = ParseValueMod(data);
-        Utils::FillSet(data.at("skill"), rule.skills);
+        if (data.contains("skill")) {
+            Utils::FillSet(data.at("skill"), rule.skills);
+        }
         if (data.contains("formFilter")) {
             rule.formFilter = ParseFormFilter(data.at("formFilter"));
             if (rule.formFilter == std::nullopt) return;

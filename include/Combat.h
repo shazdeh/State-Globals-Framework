@@ -29,6 +29,7 @@ namespace S_Combat {
         if (Utils::IsPaused()) return;
         if (inCombat && !player->IsInCombat()) {
             CombatEnd();
+            S_Hits::CombatEnd();
             inCombat = false;
         } else if (!inCombat && player->IsInCombat()) {
             CombatStart();

@@ -27,6 +27,9 @@ namespace S_Hits {
         std::optional<bool> powerAttack;
         std::optional<bool> bashAttack;
         std::optional<bool> blocked;
+        std::optional<bool> isMelee;
+        std::optional<bool> isBound;
+        std::optional<bool> isRanged;
         ValueType valueType = ValueType::Counter;
         bool resetOnMismatchHit = false;
         bool actorsOnly = true;
@@ -34,25 +37,62 @@ namespace S_Hits {
         bool ignoreTeammate = true;
     };
 
+    struct ConcentrationThrottle {
+        FormID spellID;
+        FormID targetID;
+        std::uint32_t expiresAtMS = 0;
+    };
+
     std::vector<Rule> hitGlobals;
     std::vector<Rule> hitTakenGlobals;
+    inline std::vector<ConcentrationThrottle> concentrationThrottle;
+    inline float fThrottleTime = 1.0f;
+
+    // Concentration spells spam the TESHitEvent
+    // we limit the trigger to 1/s per target
+    bool MustThrottleConcentration(HitData& hit) {
+        auto* spell = hit.source->As<MagicItem>();
+        if (!spell || spell->GetCastingType() != MagicSystem::CastingType::kConcentration) return false;
+        const auto now = RE::BSTimer::GetSingleton()->runTimeMS;
+        const auto duration = static_cast<std::uint32_t>(fThrottleTime * 1000.0f);
+        auto it = std::find_if(concentrationThrottle.begin(), concentrationThrottle.end(),
+                               [&](const ConcentrationThrottle& e) {
+                                   return e.spellID == spell->GetFormID() && e.targetID == hit.target->GetFormID();
+                               });
+        if (it != concentrationThrottle.end()) {
+            if (static_cast<std::int32_t>(it->expiresAtMS - now) > 0) {
+                return true;
+            }
+            it->expiresAtMS = now + duration;
+            return false;
+        }
+        concentrationThrottle.push_back({spell->GetFormID(), hit.target->GetFormID(), now + duration});
+
+        return false;
+    }
 
     void _Process(std::vector<Rule>& arr, HitData& hit, TESObjectREFR* lastTarget) {
+        if (MustThrottleConcentration(hit)) return;
+
+        if (bLogIDs)
+            ConsoleLog::GetSingleton()->Print( fmt::format("Hit Event! Source: {:x} : {}, Projectile: {:x}", hit.source->GetFormID(), clib_util::editorID::get_editorID(hit.source), hit.projectile).c_str());
+
+        Actor* targetActor = hit.target->As<Actor>();
+        TESObjectWEAP* sourceWeapon = hit.source->As<TESObjectWEAP>();
+
         for (auto& item : arr) {
             switch (item.valueType) {
                 case ValueType::TargetLevel:
-                    if (hit.target->IsActor()) item.global->value = hit.target->As<Actor>()->GetLevel();
+                    if (targetActor) item.global->value = targetActor->GetLevel();
                     break;
 
                 case ValueType::TargetLevelDiff:
-                    if (hit.target->IsActor())
-                        item.global->value =
-                            static_cast<float>(player->GetLevel() - hit.target->As<Actor>()->GetLevel());
+                    if (targetActor)
+                        item.global->value = static_cast<float>(player->GetLevel() - targetActor->GetLevel());
                     break;
 
                 default:
-                    if (hit.target->IsActor()) {
-                        Actor* targetActor = hit.target->As<Actor>();
+                    if (targetActor) {
                         if (item.ignoreDead && targetActor->IsDead()) continue;
                         if (item.ignoreTeammate && targetActor->IsPlayerTeammate()) continue;
                     } else if (item.actorsOnly) {
@@ -89,6 +129,18 @@ namespace S_Hits {
                             matches = false;
                             reset = true;
                         }
+                    }
+
+                    // weapon flags: IsMelee, IsRanged, IsBound
+                    if (
+                        (item.isMelee.has_value() && (!sourceWeapon || sourceWeapon->IsMelee() != item.isMelee.value())) ||
+                        (item.isRanged.has_value() &&
+                         (!sourceWeapon || sourceWeapon->IsRanged() != item.isRanged.value())) ||
+                        (item.isBound.has_value() &&
+                         (!sourceWeapon || sourceWeapon->IsBound() != item.isBound.value()))
+                    ) {
+                        matches = false;
+                        if (item.resetOnMismatchHit) reset = true;
                     }
 
                     if (reset)
@@ -139,8 +191,6 @@ namespace S_Hits {
             if (cause && target && (cause->IsPlayerRef() || target->IsPlayerRef())) {
                 auto sourceForm = TESForm::LookupByID(event->source);
                 if (!sourceForm) return BSEventNotifyControl::kContinue;
-
-                if (bLogIDs) ConsoleLog::GetSingleton()->Print(fmt::format("Hit Event! Source: {:x} : {}, Projectile: {:x}", sourceForm->GetFormID(), clib_util::editorID::get_editorID(sourceForm), event->projectile).c_str());
 
                 HitData temp;
                 temp.target = cause->IsPlayerRef() ? target : cause;
@@ -210,6 +260,15 @@ namespace S_Hits {
             if (data.contains("blocked")) {
                 rule.blocked = data.at("blocked").get<bool>();
             }
+            if (data.contains("isMelee")) {
+                rule.isMelee = data.at("isMelee").get<bool>();
+            }
+            if (data.contains("isBound")) {
+                rule.isBound = data.at("isBound").get<bool>();
+            }
+            if (data.contains("isRanged")) {
+                rule.isRanged = data.at("isRanged").get<bool>();
+            }
             if (data.contains("valueType")) {
                 auto type = data.at("valueType").get<std::string>();
                 if (type == "TargetLevel") {
@@ -230,5 +289,13 @@ namespace S_Hits {
             ScriptEventSourceHolder::GetSingleton()->AddEventSink<TESHitEvent>(&g_sink);
             ScriptEventSourceHolder::GetSingleton()->AddEventSink<TESCellAttachDetachEvent>(&g_sink);
         }
+    }
+
+    // when combat ends, cleanup the concentrationThrottle
+    void CombatEnd() {
+        const auto now = RE::BSTimer::GetSingleton()->runTimeMS;
+        std::erase_if(concentrationThrottle, [&](const ConcentrationThrottle& e) {
+            return static_cast<std::int32_t>(now - e.expiresAtMS) >= 0;
+        });
     }
 }
