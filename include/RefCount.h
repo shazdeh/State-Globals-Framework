@@ -37,7 +37,7 @@ namespace S_RefCount {
                     value += 1;
                     return BSContainer::ForEachResult::kContinue;
                 });
-                UpdateGlobalValue(item.global, item.mod);
+                UpdateGlobalValue(item.global, item.mod, value, true);
             }
         }
     }
