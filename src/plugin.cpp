@@ -26,6 +26,7 @@ bool bLogIDs = false;
 #include "Location.h"
 #include "Save.h"
 #include "SoulTrap.h"
+#include "Sleep.h"
 
 static void ParseData(const json& data) {
     for (const auto& item : data) {
@@ -50,6 +51,7 @@ static void ParseData(const json& data) {
         S_Location::parseJSON(item, global);
         S_Save::parseJSON(item, global);
         S_SoulTrap::parseJSON(item, global);
+        S_Sleep::parseJSON(item, global);
     }
 }
 
@@ -103,6 +105,7 @@ void OnMessage(SKSE::MessagingInterface::Message* message) {
         S_Pickpocket::SetupEvents();
         S_Location::SetupEvents();
         S_SoulTrap::SetupEvents();
+        S_Sleep::SetupEvents();
     } else if (message->type == SKSE::MessagingInterface::kSaveGame) {
         S_Save::Process();
     } else if (message->type == SKSE::MessagingInterface::kPostLoadGame) {
