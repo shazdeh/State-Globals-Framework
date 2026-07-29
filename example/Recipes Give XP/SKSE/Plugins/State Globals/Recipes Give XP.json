@@ -1,0 +1,14 @@
+[
+    {
+        "global" : "RecipesXP_Counter",
+        "read" : {
+            "formFilter" : "VendorItemRecipe"
+        },
+        "actions" : [
+            {
+                "type" : "console",
+                "command" : "player.advskill alchemy 100"
+            }
+        ]
+    }
+]

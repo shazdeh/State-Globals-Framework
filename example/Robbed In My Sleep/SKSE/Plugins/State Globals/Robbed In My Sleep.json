@@ -1,0 +1,22 @@
+[
+    {
+        "global" : "RubSleep_Counter",
+        "sleep" : {
+            "condition" : {
+                "locationKeyword" : ["LocTypeBanditCamp", "LocTypeDungeon", "LocTypeDraugrCrypt", "LocTypeVampireLair", "LocTypeWarlockLair", "LocTypeWerewolfLair"]
+            },
+            "mod" : {
+                "value" : 1,
+                "max" : 3,
+                "resetOnMax" : true
+            }
+        },
+        "actions" : [
+            {
+                "type" : "console",
+                "value" : 3,
+                "command" : "player.removeitem 0xf 50"
+            }
+        ]
+    }
+]

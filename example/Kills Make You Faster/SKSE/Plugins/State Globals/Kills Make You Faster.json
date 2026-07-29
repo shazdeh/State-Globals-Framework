@@ -1,0 +1,12 @@
+[
+    {
+        "global" : "KMYF_Counter",
+        "kill" : {},
+        "actions" : [
+            {
+                "type" : "console",
+                "command" : "player.modav speedmult 1"
+            }
+        ]
+    }
+]
