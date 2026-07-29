@@ -2,7 +2,36 @@
 
 #include "CLibUtilsQTR/FormReader.hpp"
 
+enum class Compare {
+    None,
+    Equal,
+    Less,
+    Greater,
+    LessEqual,
+    GreaterEqual,
+    NotEqual,
+};
+
 namespace Utils {
+    template <typename T>
+    bool DoCompare(T a, T b, Compare op) {
+        switch (op) {
+            case Compare::Equal:
+                return a == b;
+            case Compare::Less:
+                return a < b;
+            case Compare::LessEqual:
+                return a <= b;
+            case Compare::Greater:
+                return a > b;
+            case Compare::GreaterEqual:
+                return a >= b;
+            case Compare::NotEqual:
+                return a != b;
+        }
+        return false;
+    }
+
     template <typename T>
     T* GetForm(const std::string& a_id) {
         auto id = FormReader::GetFormEditorIDFromString(a_id);
@@ -10,17 +39,6 @@ namespace Utils {
             return TESForm::LookupByID<T>(id);
         }
         return nullptr;
-    }
-
-    template <typename T>
-    bool compare(T a, T b, const std::string& op) {
-        if (op == "=" || op == "==") return a == b;
-        if (op == "<") return a < b;
-        if (op == "<=") return a <= b;
-        if (op == ">") return a > b;
-        if (op == ">=") return a >= b;
-        if (op == "!=") return a != b;
-        return false;
     }
 
     template <typename T>
@@ -216,5 +234,15 @@ namespace Utils {
 
     bool IsPaused() {
         return (UI::GetSingleton()->GameIsPaused() || UI::GetSingleton()->IsMenuOpen(LoadingMenu::MENU_NAME));
+    }
+
+    void ExecuteConsoleCommand(const std::string& command, RE::TESObjectREFR* targetRef = nullptr) {
+        const auto scriptFactory = RE::IFormFactory::GetConcreteFormFactoryByType<RE::Script>();
+        const auto script = scriptFactory ? scriptFactory->Create() : nullptr;
+        if (script) {
+            script->SetCommand(command);
+            script->CompileAndRun(targetRef);
+            delete script;
+        }
     }
 }

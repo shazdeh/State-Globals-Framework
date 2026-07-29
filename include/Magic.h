@@ -23,7 +23,7 @@ namespace S_Magic {
 
     class EventSink : public BSTEventSink<TESSpellCastEvent> {
         BSEventNotifyControl ProcessEvent(const TESSpellCastEvent* event, BSTEventSource<TESSpellCastEvent>*) {
-            if (!event->object) return BSEventNotifyControl::kContinue;
+            if (!event->object || event->spell == 0) return BSEventNotifyControl::kContinue;
             auto ref = event->object.get();
             if (ref && ref->IsPlayerRef()) {
                 Process(event->spell);

@@ -1,7 +1,6 @@
 #pragma once
 
 namespace S_Combat {
-    Actor* player;
     std::unique_ptr<Ticker> ticker;
     bool inCombat;
 
@@ -57,7 +56,6 @@ namespace S_Combat {
         if (startGlobals.empty() && endGlobals.empty()) return;
         // TESCombatEvent does not work for player, and getting player.IsInCombat()
         // after it fires gives incorrect results. We poll.
-        player = PlayerCharacter::GetSingleton();
         if (!ticker) {
             ticker = std::make_unique<Ticker>(Tick, std::chrono::milliseconds(100));
             ticker->Start();

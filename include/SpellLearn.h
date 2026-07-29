@@ -6,7 +6,7 @@ namespace S_SpellLearn {
         std::optional<FormFilter> formFilter;
         ValueMod mod{};
         std::optional<int> skillLevel;
-        std::string skillComp = "=";
+        Compare skillComp = Compare::Equal;
         ActorValue av = ActorValue::kNone;
     };
 
@@ -26,8 +26,7 @@ namespace S_SpellLearn {
         int skillLevel = GetSpellMinimumSkillLevel(spell);
 
         for (auto& item : globals) {
-            if (item.skillLevel.has_value() &&
-                !Utils::compare(skillLevel, item.skillLevel.value(), item.skillComp))
+            if (item.skillLevel.has_value() && !Utils::DoCompare(skillLevel, item.skillLevel.value(), item.skillComp))
                 continue;
             if (item.av != ActorValue::kNone && assocSkill != item.av) continue;
             if (item.formFilter.has_value() && !ValidateFormFilter(spell, item.formFilter.value())) continue;
@@ -37,7 +36,6 @@ namespace S_SpellLearn {
     }
 
     void Process() {
-        auto player = PlayerCharacter::GetSingleton();
         const auto& all = TESDataHandler::GetSingleton()->GetFormArray<TESObjectBOOK>();
 
         for (auto& item : globals) {
@@ -53,7 +51,7 @@ namespace S_SpellLearn {
     }
 
     class EventSink : public BSTEventSink<SpellsLearned::Event> {
-        BSEventNotifyControl ProcessEvent(const SpellsLearned::Event* event, BSTEventSource<SpellsLearned::Event>*) override {
+        BSEventNotifyControl ProcessEvent(const SpellsLearned::Event*, BSTEventSource<SpellsLearned::Event>*) override {
             Process();
             // the SpellsLearned::Event is buggy and event.spell contains invalid data
             // so this is not used atm and instead we loop all spells
@@ -70,7 +68,7 @@ namespace S_SpellLearn {
         if (data.contains("skillLevel")) {
             rule.skillLevel = data.at("skillLevel").get<int>();
             if (data.contains("skillComp")) {
-                rule.skillComp = data.at("skillComp").get<std::string>();
+                rule.skillComp = ParseCompareOperator(data.at("skillComp").get<std::string>());
             }
         }
         if (data.contains("skill")) {

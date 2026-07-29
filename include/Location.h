@@ -25,13 +25,13 @@ namespace S_Location {
     }
 
     class EventSink : public BSTEventSink<LocationDiscovery::Event>, public BSTEventSink<LocationCleared::Event> {
-        BSEventNotifyControl ProcessEvent(const LocationDiscovery::Event* event,
+        BSEventNotifyControl ProcessEvent(const LocationDiscovery::Event*,
                                           BSTEventSource<LocationDiscovery::Event>*) {
             Process(false);
             return BSEventNotifyControl::kContinue;
         }
 
-        BSEventNotifyControl ProcessEvent(const LocationCleared::Event* event,
+        BSEventNotifyControl ProcessEvent(const LocationCleared::Event*,
                                           BSTEventSource<LocationCleared::Event>*) {
             Process(true);
             return BSEventNotifyControl::kContinue;

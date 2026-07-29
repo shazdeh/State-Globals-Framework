@@ -9,6 +9,7 @@ PlayerCharacter* player;
 TESObjectWEAP* Unarmed;
 bool bLogIDs = false;
 
+#include "Action.h"
 #include "Base.h"
 #include "SpellLearn.h"
 #include "Equip.h"
@@ -27,6 +28,8 @@ bool bLogIDs = false;
 #include "Save.h"
 #include "SoulTrap.h"
 #include "Sleep.h"
+#include "Wait.h"
+// #include "Quest.h"
 
 static void ParseData(const json& data) {
     for (const auto& item : data) {
@@ -35,6 +38,7 @@ static void ParseData(const json& data) {
         TESGlobal* global = Utils::GetForm<TESGlobal>(item.at("global").get<std::string>());
         if (!global) continue;
 
+        S_Action::parseJSON(item, global);
         S_Magic::parseJSON(item, global);
         S_Inventory::parseJSON(item, global);
         S_ActiveEffect::parseJSON(item, global);
@@ -52,6 +56,8 @@ static void ParseData(const json& data) {
         S_Save::parseJSON(item, global);
         S_SoulTrap::parseJSON(item, global);
         S_Sleep::parseJSON(item, global);
+        S_Wait::parseJSON(item, global);
+        //S_Quest::parseJSON(item, global);
     }
 }
 
@@ -106,6 +112,8 @@ void OnMessage(SKSE::MessagingInterface::Message* message) {
         S_Location::SetupEvents();
         S_SoulTrap::SetupEvents();
         S_Sleep::SetupEvents();
+        S_Wait::SetupEvents();
+        //S_Quest::SetupEvents();
     } else if (message->type == SKSE::MessagingInterface::kSaveGame) {
         S_Save::Process();
     } else if (message->type == SKSE::MessagingInterface::kPostLoadGame) {

@@ -50,5 +50,15 @@
             "hostile" : true,
             "level" : ">"
         }
+    },
+    {
+        "global" : "SGF_TeammatesNearby",
+        "refCount" : {
+            "distance" : 900,
+            "formFilter" : {
+                "type" : 43
+            },
+            "teammate" : true
+        }
     }
 ]

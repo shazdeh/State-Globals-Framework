@@ -17,6 +17,8 @@ struct FormFilter {
 
 struct ConditionFilter {
     TESForm* form = nullptr;
+    float value = 0.0;
+    Compare compare = Compare::Equal;
 };
 
 ValueMod ParseValueMod(const nlohmann::json_abi_v3_12_0::json& item) {
@@ -60,6 +62,23 @@ std::optional<FormFilter> ParseFormFilter(const nlohmann::json_abi_v3_12_0::json
     return filter;
 }
 
+Compare ParseCompareOperator(std::string value) {
+    if (value == "==" || value == "=")
+        return Compare::Equal;
+    else if (value == "<")
+        return Compare::Less;
+    else if (value == ">")
+        return Compare::Greater;
+    else if (value == "<=")
+        return Compare::LessEqual;
+    else if (value == ">=")
+        return Compare::GreaterEqual;
+    else if (value == "!=")
+        return Compare::NotEqual;
+    else
+        return Compare::None;
+}
+
 std::optional<ConditionFilter> ParseConditionFilter(const nlohmann::json_abi_v3_12_0::json& data) {
     ConditionFilter filter;
     if (data.is_string()) {
@@ -68,6 +87,12 @@ std::optional<ConditionFilter> ParseConditionFilter(const nlohmann::json_abi_v3_
     } else if (data.contains("form")) {
         filter.form = Utils::GetForm<TESForm>(data.at("form").get<std::string>());
         if (!filter.form) return std::nullopt;
+        if (data.contains("value")) {
+            filter.value = data.at("value").get<float>();
+        }
+        if (data.contains("compare")) {
+            filter.compare = ParseCompareOperator(data.at("compare").get<std::string>());
+        }
     } else {
         return std::nullopt;
     }
@@ -98,29 +123,47 @@ bool ValidateConditionForm(ConditionFilter& filter) {
         case FormType::MagicEffect:
             return player->HasMagicEffect(filter.form->As<EffectSetting>());
         case FormType::Faction:
-            return player->IsInFaction(filter.form->As<TESFaction>());
+            return Utils::DoCompare(player->GetFactionRank(filter.form->As<TESFaction>(), true),
+                             static_cast<int>(filter.value), filter.compare);
         case FormType::Location:
             return Utils::MatchLocation(player->GetCurrentLocation(), filter.form->As<BGSLocation>());
+        case FormType::Global:
+            return Utils::DoCompare(filter.form->As<TESGlobal>()->value, filter.value, filter.compare);
+        case FormType::Quest:
+            return Utils::DoCompare(filter.form->As<TESQuest>()->GetCurrentStageID(),
+                                    static_cast<uint16_t>(filter.value),
+                             filter.compare);
     }
     return false;
 }
 
 void UpdateGlobalValue(TESGlobal* global, ValueMod& mod, float fMult = 1.0f, bool bOverride = false) {
+    float oldValue = global->value;
+    float newValue = oldValue;
+    bool reset = false;
+
     if (mod.value == 0.0f || fMult == 0.0f) {
-        global->value = 0;
+        newValue = 0;
     } else {
-        float newValue = (bOverride ? 0.0f : global->value) + (mod.value * fMult);
+        newValue = (bOverride ? 0.0f : oldValue) + (mod.value * fMult);
         if (mod.max.has_value() && newValue >= mod.max.value()) {
             if (mod.resetOnMax)
-                newValue = mod.base;
-            else
-                newValue = mod.max.value();
+                reset = true;
+            newValue = mod.max.value();
         } else if (mod.min.has_value() && newValue <= mod.min.value()) {
             if (mod.resetOnMin)
-                newValue = mod.base;
-            else
-                newValue = mod.min.value();
+                reset = true;
+            newValue = mod.min.value();
         }
-        global->value = newValue;
     }
+
+    // run actions before value reset
+    if (newValue != oldValue) {
+        S_Action::RunActions(global, newValue);
+    }
+
+    if (reset) {
+        newValue = mod.base;
+    }
+    global->value = newValue;
 }
