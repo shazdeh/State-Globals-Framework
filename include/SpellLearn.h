@@ -68,7 +68,7 @@ namespace S_SpellLearn {
         if (data.contains("skillLevel")) {
             rule.skillLevel = data.at("skillLevel").get<int>();
             if (data.contains("skillComp")) {
-                rule.skillComp = ParseCompareOperator(data.at("skillComp").get<std::string>());
+                rule.skillComp = Utils::ParseCompareOperator(data.at("skillComp").get<std::string>());
             }
         }
         if (data.contains("skill")) {

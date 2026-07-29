@@ -23,18 +23,31 @@ namespace S_Action {
 
     std::unordered_map<TESGlobal*, Rule> globals;
 
+    std::optional<ActionBase> ParseActionBase(const nlohmann::json_abi_v3_12_0::json& item) {
+        if (item.contains("value")) {
+            ActionBase base;
+            base.value = item.at("value").get<float>();
+            if (item.contains("compare")) {
+                base.compare = Utils::ParseCompareOperator(item.at("compare").get<std::string>());
+            }
+            return base;
+        }
+        return std::nullopt;
+    }
+
     void parseJSON(const nlohmann::json_abi_v3_12_0::json& item, TESGlobal* global) {
         if (!item.contains("actions")) return;
         auto& data = item.at("actions");
         if (!data.is_array()) return;
         Rule actions;
-        for (const auto& item : data) {
-            if (!item.contains("type")) continue;
-            auto type = item.at("type").get<std::string>();
+        for (const auto& condition : data) {
+            if (!condition.contains("type")) continue;
+            auto type = condition.at("type").get<std::string>();
             if (type == "console") {
-                if (!item.contains("command")) continue;
+                if (!condition.contains("command")) continue;
                 ConsoleAction action;
-                action.command = item.at("command").get<std::string>();
+                action.command = condition.at("command").get<std::string>();
+                action.base = ParseActionBase(condition);
                 globals[global].consoleActions.push_back(action);
             }
         }

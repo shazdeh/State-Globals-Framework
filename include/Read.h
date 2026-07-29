@@ -3,6 +3,7 @@
 namespace S_Read {
     struct Rule {
         TESGlobal* global = nullptr;
+        std::optional<ConditionFilter> condition;
         std::optional<FormFilter> formFilter;
         ValueMod mod{};
         std::optional<bool> skillBook;
@@ -13,6 +14,7 @@ namespace S_Read {
 
     void Process(TESObjectBOOK* book, bool skillBook) {
         for (auto& item : globals) {
+            if (item.condition.has_value() && !ValidateConditionForm(item.condition.value())) continue;
             if (item.skillBook.has_value() && skillBook != item.skillBook.value()) continue;
             if (item.spellBook.has_value() && book->TeachesSpell() != item.spellBook.value()) continue;
             if (item.formFilter.has_value() && !ValidateFormFilter(book, item.formFilter.value())) continue;
@@ -34,6 +36,10 @@ namespace S_Read {
         auto& data = item.at("read");
         Rule rule;
         rule.mod = ParseValueMod(data);
+        if (data.contains("condition")) {
+            rule.condition = ParseConditionFilter(data.at("condition"));
+            if (rule.condition == std::nullopt) return;
+        }
         if (data.contains("formFilter")) {
             rule.formFilter = ParseFormFilter(data.at("formFilter"));
             if (rule.formFilter == std::nullopt) return;
@@ -56,9 +62,5 @@ namespace S_Read {
     }
 
     void OnLoadGame() {
-        auto& all = TESDataHandler::GetSingleton()->GetFormArray<TESObjectBOOK>();
-        for (auto book : all) {
-            Process(book, book->TeachesSkill());
-        }
     }
 }

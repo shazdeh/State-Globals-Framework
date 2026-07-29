@@ -13,6 +13,23 @@ enum class Compare {
 };
 
 namespace Utils {
+    Compare ParseCompareOperator(std::string value) {
+        if (value == "==" || value == "=")
+            return Compare::Equal;
+        else if (value == "<")
+            return Compare::Less;
+        else if (value == ">")
+            return Compare::Greater;
+        else if (value == "<=")
+            return Compare::LessEqual;
+        else if (value == ">=")
+            return Compare::GreaterEqual;
+        else if (value == "!=")
+            return Compare::NotEqual;
+        else
+            return Compare::None;
+    }
+
     template <typename T>
     bool DoCompare(T a, T b, Compare op) {
         switch (op) {

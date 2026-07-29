@@ -70,7 +70,7 @@ namespace S_RefCount {
             rule.dead = data.at("dead").get<bool>();
         }
         if (data.contains("level")) {
-            rule.levelComp = ParseCompareOperator(data.at("level").get<std::string>());
+            rule.levelComp = Utils::ParseCompareOperator(data.at("level").get<std::string>());
         }
         rule.global = global;
         globals.push_back(rule);

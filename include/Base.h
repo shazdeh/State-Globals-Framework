@@ -17,6 +17,7 @@ struct FormFilter {
 
 struct ConditionFilter {
     TESForm* form = nullptr;
+    std::vector<BGSKeyword*> locationKeyword;
     float value = 0.0;
     Compare compare = Compare::Equal;
 };
@@ -62,40 +63,32 @@ std::optional<FormFilter> ParseFormFilter(const nlohmann::json_abi_v3_12_0::json
     return filter;
 }
 
-Compare ParseCompareOperator(std::string value) {
-    if (value == "==" || value == "=")
-        return Compare::Equal;
-    else if (value == "<")
-        return Compare::Less;
-    else if (value == ">")
-        return Compare::Greater;
-    else if (value == "<=")
-        return Compare::LessEqual;
-    else if (value == ">=")
-        return Compare::GreaterEqual;
-    else if (value == "!=")
-        return Compare::NotEqual;
-    else
-        return Compare::None;
-}
-
 std::optional<ConditionFilter> ParseConditionFilter(const nlohmann::json_abi_v3_12_0::json& data) {
     ConditionFilter filter;
     if (data.is_string()) {
         filter.form = Utils::GetForm<TESForm>(data.get<std::string>());
         if (!filter.form) return std::nullopt;
-    } else if (data.contains("form")) {
-        filter.form = Utils::GetForm<TESForm>(data.at("form").get<std::string>());
-        if (!filter.form) return std::nullopt;
-        if (data.contains("value")) {
-            filter.value = data.at("value").get<float>();
-        }
-        if (data.contains("compare")) {
-            filter.compare = ParseCompareOperator(data.at("compare").get<std::string>());
-        }
     } else {
+        if (data.contains("form")) {
+            filter.form = Utils::GetForm<TESForm>(data.at("form").get<std::string>());
+            if (!filter.form) return std::nullopt;
+            if (data.contains("value")) {
+                filter.value = data.at("value").get<float>();
+            }
+            if (data.contains("compare")) {
+                filter.compare = Utils::ParseCompareOperator(data.at("compare").get<std::string>());
+            }
+        }
+        if (data.contains("locationKeyword")) {
+            if (!Utils::FillFormsArray<BGSKeyword>(data.at("locationKeyword"), filter.locationKeyword))
+                return std::nullopt;
+        }
+    }
+
+    if (!filter.form && filter.locationKeyword.empty()) {
         return std::nullopt;
     }
+
     return filter;
 }
 
@@ -117,24 +110,39 @@ bool ValidateFormFilter(TESForm* a_form, FormFilter& a_filter) {
 }
 
 bool ValidateConditionForm(ConditionFilter& filter) {
-    switch (filter.form->GetFormType()) {
-        case FormType::Perk:
-            return player->HasPerk(filter.form->As<BGSPerk>());
-        case FormType::MagicEffect:
-            return player->HasMagicEffect(filter.form->As<EffectSetting>());
-        case FormType::Faction:
-            return Utils::DoCompare(player->GetFactionRank(filter.form->As<TESFaction>(), true),
-                             static_cast<int>(filter.value), filter.compare);
-        case FormType::Location:
-            return Utils::MatchLocation(player->GetCurrentLocation(), filter.form->As<BGSLocation>());
-        case FormType::Global:
-            return Utils::DoCompare(filter.form->As<TESGlobal>()->value, filter.value, filter.compare);
-        case FormType::Quest:
-            return Utils::DoCompare(filter.form->As<TESQuest>()->GetCurrentStageID(),
-                                    static_cast<uint16_t>(filter.value),
-                             filter.compare);
+    if (filter.form) {
+        switch (filter.form->GetFormType()) {
+            case FormType::Perk:
+                if (!player->HasPerk(filter.form->As<BGSPerk>())) return false;
+                break;
+            case FormType::MagicEffect:
+                if (!player->HasMagicEffect(filter.form->As<EffectSetting>())) return false;
+                break;
+            case FormType::Faction:
+                if (Utils::DoCompare(player->GetFactionRank(filter.form->As<TESFaction>(), true),
+                                     static_cast<int>(filter.value), filter.compare))
+                    return false;
+                break;
+            case FormType::Location:
+                if (!Utils::MatchLocation(player->GetCurrentLocation(), filter.form->As<BGSLocation>())) return false;
+                break;
+            case FormType::Global:
+                if (!Utils::DoCompare(filter.form->As<TESGlobal>()->value, filter.value, filter.compare)) return false;
+                break;
+            case FormType::Quest:
+                if (!Utils::DoCompare(filter.form->As<TESQuest>()->GetCurrentStageID(),
+                                      static_cast<uint16_t>(filter.value), filter.compare))
+                    return false;
+                break;
+        }
     }
-    return false;
+
+    if (!filter.locationKeyword.empty() &&
+        !player->GetCurrentLocation()->HasKeywordInArray(filter.locationKeyword, false)) {
+        return false;
+    }
+
+    return true;
 }
 
 void UpdateGlobalValue(TESGlobal* global, ValueMod& mod, float fMult = 1.0f, bool bOverride = false) {
