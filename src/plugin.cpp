@@ -29,6 +29,8 @@ bool bLogIDs = false;
 #include "SoulTrap.h"
 #include "Sleep.h"
 #include "Wait.h"
+#include "Ini.h"
+#include "ModEvent.h"
 // #include "Quest.h"
 
 static void ParseData(const json& data) {
@@ -57,6 +59,8 @@ static void ParseData(const json& data) {
         S_SoulTrap::parseJSON(item, global);
         S_Sleep::parseJSON(item, global);
         S_Wait::parseJSON(item, global);
+        S_Ini::parseJSON(item, global);
+        S_ModEvent::parseJSON(item, global);
         //S_Quest::parseJSON(item, global);
     }
 }
@@ -113,6 +117,7 @@ void OnMessage(SKSE::MessagingInterface::Message* message) {
         S_SoulTrap::SetupEvents();
         S_Sleep::SetupEvents();
         S_Wait::SetupEvents();
+        S_ModEvent::SetupEvents();
         //S_Quest::SetupEvents();
     } else if (message->type == SKSE::MessagingInterface::kSaveGame) {
         S_Save::Process();
@@ -122,6 +127,9 @@ void OnMessage(SKSE::MessagingInterface::Message* message) {
         S_Perks::OnLoadGame();
         S_Read::OnLoadGame();
         S_SpellLearn::OnLoadGame();
+        S_Ini::OnLoadGame();
+    } else if (message->type == SKSE::MessagingInterface::kNewGame) {
+        S_Ini::OnLoadGame();
     }
 }
 

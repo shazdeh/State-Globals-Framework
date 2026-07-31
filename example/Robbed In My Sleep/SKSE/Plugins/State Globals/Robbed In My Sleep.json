@@ -13,9 +13,9 @@
         },
         "actions" : [
             {
-                "type" : "console",
+                "type" : "modEvent",
                 "value" : 3,
-                "command" : "player.removeitem 0xf 50"
+                "eventName" : "CarelessSleep"
             }
         ]
     }

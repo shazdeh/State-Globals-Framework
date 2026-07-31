@@ -12,6 +12,7 @@ namespace S_Magic {
 
     void Process(FormID spellID) {
         TESForm* spell = TESForm::LookupByID(spellID);
+        if (!spell) return;
         if (bLogIDs) ConsoleLog::GetSingleton()->Print(fmt::format("Spell Cast! ID: {:x}, Editor ID: {}", spell->GetFormID(), clib_util::editorID::get_editorID(spell)).c_str());
         for (auto& item : globals) {
             if (item.condition.has_value() && !ValidateConditionForm(item.condition.value())) continue;

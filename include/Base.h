@@ -93,6 +93,7 @@ std::optional<ConditionFilter> ParseConditionFilter(const nlohmann::json_abi_v3_
 }
 
 bool ValidateFormFilter(TESForm* a_form, FormFilter& a_filter) {
+    if (!a_form) return false; // safety check, should never match
     if (!a_filter.formTypes.empty() && !a_filter.formTypes.contains(std::to_underlying(a_form->GetFormType())))
         return false;
     if (a_filter.formFilter) {
@@ -124,7 +125,11 @@ bool ValidateConditionForm(ConditionFilter& filter) {
                     return false;
                 break;
             case FormType::Location:
-                if (!Utils::MatchLocation(player->GetCurrentLocation(), filter.form->As<BGSLocation>())) return false;
+                if (auto location = player->GetCurrentLocation(); location) {
+                    if (!Utils::MatchLocation(player->GetCurrentLocation(), filter.form->As<BGSLocation>())) return false;
+                } else {
+                    return false;
+                }
                 break;
             case FormType::Global:
                 if (!Utils::DoCompare(filter.form->As<TESGlobal>()->value, filter.value, filter.compare)) return false;

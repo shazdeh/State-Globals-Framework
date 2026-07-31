@@ -11,6 +11,11 @@ namespace S_Action {
         std::string command;
     };
 
+    struct ModEventAction {
+        std::optional<ActionBase> base;
+        std::string eventName;
+    };
+
     struct SpellAction {
         ActionBase base;
         TESForm* spell = nullptr;
@@ -19,6 +24,7 @@ namespace S_Action {
     struct Rule {
         std::vector<ConsoleAction> consoleActions;
         std::vector<SpellAction> spellActions;
+        std::vector<ModEventAction> modEventActions;
     };
 
     std::unordered_map<TESGlobal*, Rule> globals;
@@ -49,6 +55,12 @@ namespace S_Action {
                 action.command = condition.at("command").get<std::string>();
                 action.base = ParseActionBase(condition);
                 globals[global].consoleActions.push_back(action);
+            } else if (type == "modEvent") {
+                if (!condition.contains("eventName")) continue;
+                ModEventAction action;
+                action.base = ParseActionBase(condition);
+                action.eventName = condition.at("eventName").get<std::string>();
+                globals[global].modEventActions.push_back(action);
             }
         }
     }
@@ -57,6 +69,7 @@ namespace S_Action {
         auto it = globals.find(global);
         if (it == globals.end()) return;
         
+        // console command
         if (!it->second.consoleActions.empty()) {
             for (auto& action : it->second.consoleActions) {
                 if (action.base.has_value() &&
@@ -64,6 +77,18 @@ namespace S_Action {
                     continue;
                 
                 Utils::ExecuteConsoleCommand(action.command);
+            }
+        }
+
+        // mod event
+        if (!it->second.modEventActions.empty()) {
+            for (auto& action : it->second.modEventActions) {
+                if (action.base.has_value() &&
+                    !Utils::DoCompare(a_globalValue, action.base.value().value, action.base.value().compare))
+                    continue;
+
+                SKSE::ModCallbackEvent evt{.eventName = action.eventName, .numArg = a_globalValue};
+                SKSE::GetModCallbackEventSource()->SendEvent(&evt);
             }
         }
     }

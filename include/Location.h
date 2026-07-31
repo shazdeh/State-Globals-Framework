@@ -14,7 +14,8 @@ namespace S_Location {
     std::vector<Rule> globals;
 
     void Process(bool bCleared) {
-        auto playerLocation = PlayerCharacter::GetSingleton()->GetCurrentLocation();
+        auto playerLocation = player->GetCurrentLocation();
+        if (!playerLocation) return;
         for (auto& item : globals) {
             if ((bCleared && !item.clear) || (!bCleared && !item.discover)) continue;
             if (item.condition.has_value() && !ValidateConditionForm(item.condition.value())) continue;
