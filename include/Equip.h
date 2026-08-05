@@ -38,8 +38,9 @@ namespace S_Equip {
             for (auto state : states) {
                 if ((state == false && !item.right) || (state && !item.left)) continue;
                 TESForm* object = state == false ? rightObject : leftObject;
-                if (object && ((item.weapon && object->Is(FormType::Weapon)) ||
-                    (item.scroll && object->Is(FormType::Scroll)))) {
+                if (!object) continue;
+                if ((item.weapon && object->Is(FormType::Weapon)) ||
+                    (item.scroll && object->Is(FormType::Scroll))) {
                     InventoryEntryData* entryData = state == false ? rightEntry : leftEntry;
                     if (!entryData) continue;
                     bool isStolen = entryData->GetOwner() ? true : false;
@@ -62,7 +63,8 @@ namespace S_Equip {
                     } else {
                         value += entryData->GetWeight();
                     }
-                } else if (object && item.spell && object->Is(FormType::Spell)) {
+                }
+                if (item.spell && object->Is(FormType::Spell)) {
                     if (item.formFilter.has_value() && !ValidateFormFilter(object, item.formFilter.value())) continue;
                     if (item.spellFilter.has_value() &&
                         !ValidateSpellFilter(item.spellFilter.value(), object->As<SpellItem>()))

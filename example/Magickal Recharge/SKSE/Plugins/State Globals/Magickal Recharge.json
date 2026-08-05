@@ -1,0 +1,32 @@
+[
+    {
+        "global" : "MagickalRecharge_FireEquip",
+        "equip" : {
+            "spell" : true,
+            "spellFilter" : "MagicDamageFire",
+            "weapon" : true,
+            "isEnchanted" : true,
+            "enchantFilter" : "MagicDamageFire"
+        }
+    },
+    {
+        "global" : "MagickalRecharge_FrostEquip",
+        "equip" : {
+            "spell" : true,
+            "spellFilter" : "MagicDamageFrost",
+            "weapon" : true,
+            "isEnchanted" : true,
+            "enchantFilter" : "MagicDamageFrost"
+        }
+    },
+    {
+        "global" : "MagickalRecharge_ShockEquip",
+        "equip" : {
+            "spell" : true,
+            "spellFilter" : "MagicDamageShock",
+            "weapon" : true,
+            "isEnchanted" : true,
+            "enchantFilter" : "MagicDamageShock"
+        }
+    }
+]
