@@ -2,6 +2,23 @@
 
 namespace S_Hits {
     enum ValueType { Counter = 0, TargetLevel = 1, TargetLevelDiff = 2 };
+    enum WeaponType {
+        None,
+        Melee,
+        Ranged,
+        Unarmed,
+        OneHanded,
+        TwoHanded,
+        OneHandedSword,
+        OneHandedDagger,
+        OneHandedAxe,
+        OneHandedMace,
+        TwoHandedSword,
+        TwoHandedAxe,
+        Bow,
+        Crossbow,
+        Staff
+    };
 
     struct HitData {
         bool process = false;
@@ -29,11 +46,8 @@ namespace S_Hits {
         std::optional<bool> powerAttack;
         std::optional<bool> bashAttack;
         std::optional<bool> blocked;
-        std::optional<bool> isMelee;
         std::optional<bool> isBound;
-        std::optional<bool> isRanged;
-        std::optional<bool> isBow;
-        std::optional<bool> isCrossbow;
+        WeaponType weaponType = WeaponType::None;
         std::optional<bool> crit;
         std::optional<bool> sneakCrit;
         std::optional<ActorValue> weaponSkill; // @todo: this should be a vector
@@ -75,6 +89,40 @@ namespace S_Hits {
         }
         concentrationThrottle.push_back({spell->GetFormID(), hit.target->GetFormID(), now + duration});
 
+        return false;
+    }
+
+    bool MatchWeaponType(TESObjectWEAP* weapon, WeaponType type) {
+        switch (type) {
+            case WeaponType::Melee:
+                return weapon->IsMelee();
+            case WeaponType::Ranged:
+                return weapon->IsRanged();
+            case WeaponType::Unarmed:
+                return weapon->IsHandToHandMelee();
+            case WeaponType::OneHanded:
+                return weapon->IsOneHandedAxe() || weapon->IsOneHandedDagger() || weapon->IsOneHandedMace() || weapon->IsOneHandedSword();
+            case WeaponType::TwoHanded:
+                return weapon->IsTwoHandedAxe() || weapon->IsTwoHandedSword(); // missing mace
+            case WeaponType::OneHandedSword:
+                return weapon->IsOneHandedSword();
+            case WeaponType::OneHandedDagger:
+                return weapon->IsOneHandedDagger();
+            case WeaponType::OneHandedAxe:
+                return weapon->IsOneHandedAxe();
+            case WeaponType::OneHandedMace:
+                return weapon->IsOneHandedMace();
+            case WeaponType::TwoHandedSword:
+                return weapon->IsTwoHandedSword();
+            case WeaponType::TwoHandedAxe:
+                return weapon->IsTwoHandedAxe();
+            case WeaponType::Bow:
+                return weapon->IsBow();
+            case WeaponType::Crossbow:
+                return weapon->IsCrossbow();
+            case WeaponType::Staff:
+                return weapon->IsStaff();
+        }
         return false;
     }
 
@@ -142,14 +190,9 @@ namespace S_Hits {
                         if (item.resetOnMismatchHit) reset = true;
                     }
 
-                    // weapon flags: IsMelee, IsRanged, IsBow, IsCrossbow, IsBound
+                    // weapon flags
                     if (
-                        (item.isMelee.has_value() && (!sourceWeapon || sourceWeapon->IsMelee() != item.isMelee.value())) ||
-                        (item.isRanged.has_value() &&
-                         (!sourceWeapon || sourceWeapon->IsRanged() != item.isRanged.value())) ||
-                        (item.isBow.has_value() && (!sourceWeapon || sourceWeapon->IsBow() != item.isBow.value())) ||
-                        (item.isCrossbow.has_value() &&
-                         (!sourceWeapon || sourceWeapon->IsCrossbow() != item.isCrossbow.value())) ||
+                        (item.weaponType != WeaponType::None && (!sourceWeapon || !MatchWeaponType(sourceWeapon, item.weaponType))) ||
                         (item.isBound.has_value() &&
                          (!sourceWeapon || sourceWeapon->IsBound() != item.isBound.value()))
                     ) {
@@ -251,7 +294,7 @@ namespace S_Hits {
                                           BSTEventSource<TESCellAttachDetachEvent>*) {
             if (!event || !event->reference) return BSEventNotifyControl::kContinue;
             auto ref = event->reference.get();
-            if (ref->IsActor() && ref->As<Actor>()->HasSpell(LastHitSpell)) {
+            if (ref && ref->IsActor() && ref->As<Actor>()->HasSpell(LastHitSpell)) {
                 ref->As<Actor>()->RemoveSpell(LastHitSpell);
             }
             return BSEventNotifyControl::kContinue;
@@ -299,20 +342,40 @@ namespace S_Hits {
             if (data.contains("blocked")) {
                 rule.blocked = data.at("blocked").get<bool>();
             }
-            if (data.contains("isMelee")) {
-                rule.isMelee = data.at("isMelee").get<bool>();
-            }
             if (data.contains("isBound")) {
                 rule.isBound = data.at("isBound").get<bool>();
             }
-            if (data.contains("isRanged")) {
-                rule.isRanged = data.at("isRanged").get<bool>();
-            }
-            if (data.contains("isBow")) {
-                rule.isBow = data.at("isBow").get<bool>();
-            }
-            if (data.contains("isCrossbow")) {
-                rule.isCrossbow = data.at("isCrossbow").get<bool>();
+            if (data.contains("weaponType")) {
+                auto value = data.at("weaponType").get<std::string>();
+                if (value == "melee") {
+                    rule.weaponType = WeaponType::Melee;
+                } else if (value == "ranged") {
+                    rule.weaponType = WeaponType::Ranged;
+                } else if (value == "unarmed") {
+                    rule.weaponType = WeaponType::Unarmed;
+                } else if (value == "oneHanded") {
+                    rule.weaponType = WeaponType::OneHanded;
+                } else if (value == "twoHanded") {
+                    rule.weaponType = WeaponType::TwoHanded;
+                } else if (value == "oneHandedSword") {
+                    rule.weaponType = WeaponType::OneHandedSword;
+                } else if (value == "oneHandedDagger") {
+                    rule.weaponType = WeaponType::OneHandedDagger;
+                } else if (value == "oneHandedAxe") {
+                    rule.weaponType = WeaponType::OneHandedAxe;
+                } else if (value == "oneHandedMace") {
+                    rule.weaponType = WeaponType::OneHandedMace;
+                } else if (value == "twoHandedSword") {
+                    rule.weaponType = WeaponType::TwoHandedSword;
+                } else if (value == "twoHandedAxe") {
+                    rule.weaponType = WeaponType::TwoHandedAxe;
+                } else if (value == "bow") {
+                    rule.weaponType = WeaponType::Bow;
+                } else if (value == "crossbow") {
+                    rule.weaponType = WeaponType::Crossbow;
+                } else if (value == "staff") {
+                    rule.weaponType = WeaponType::Staff;
+                }
             }
             if (data.contains("crit")) {
                 rule.crit = data.at("crit").get<bool>();

@@ -58,7 +58,8 @@
             "formFilter" : {
                 "type" : 43
             },
-            "teammate" : true
+            "teammate" : true,
+            "hostile" : false
         }
     }
 ]

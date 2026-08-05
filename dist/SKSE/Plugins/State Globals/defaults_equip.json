@@ -2,42 +2,42 @@
     {
         "global" : "SGF_EquippedApparelsWeight",
         "equip" : {
-            "weapon" : false,
+            "apparel" : true,
             "valueType" : "weight"
         }
     },
     {
         "global" : "SGF_EquippedWeaponsWeight",
         "equip" : {
-            "apparel" : false,
+            "weapon" : true,
             "valueType" : "weight"
         }
     },
     {
         "global" : "SGF_EquippedStolenWeaponsCount",
         "equip" : {
-            "apparel" : false,
+            "weapon" : true,
             "stolen" : true
         }
     },
     {
         "global" : "SGF_EquippedStolenApparelCount",
         "equip" : {
-            "weapon" : false,
+            "apparel" : true,
             "stolen" : true
         }
     },
     {
         "global" : "SGF_EquippedEnchantedWeaponsCount",
         "equip" : {
-            "apparel" : false,
+            "weapon" : true,
             "enchanted" : true
         }
     },
     {
         "global" : "SGF_EquippedEnchantedApparelCount",
         "equip" : {
-            "weapon" : false,
+            "apparel" : true,
             "enchanted" : true
         }
     }

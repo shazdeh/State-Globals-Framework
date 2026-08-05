@@ -127,13 +127,14 @@ namespace Utils {
         return {};
     }
 
-    bool FormHasAnyMagicEffect(TESForm* a_form, std::unordered_set<EffectSetting*> a_effectsSet) {
+    bool FormHasMagicEffectKeyword(TESForm* a_form, std::vector<BGSKeyword*> a_keywords) {
         BSTArray<RE::Effect*> effects = GetMagicEffects(a_form);
-
         if (effects.size()) {
             for (Effect* effect : effects) {
-                if (a_effectsSet.contains(effect->baseEffect)) {
-                    return true;
+                if (auto base = effect ? effect->baseEffect : nullptr; base) {
+                    if (effect->baseEffect->HasKeywordInArray(a_keywords, false)) {
+                        return true;
+                    }
                 }
             }
         }
@@ -141,12 +142,23 @@ namespace Utils {
         return false;
     }
 
-    bool FormHasMagicEffectKeyword(TESForm* a_form, std::vector<BGSKeyword*> a_keywords) {
-        BSTArray<RE::Effect*> effects = GetMagicEffects(a_form);
-        if (effects.size()) {
-            for (Effect* effect : effects) {
-                if (effect->baseEffect->HasKeywordInArray(a_keywords, false)) {
-                    return true;
+    bool HasAnyMagicEffectArchetype(MagicItem* a_form, std::unordered_set<EffectArchetypes::ArchetypeID>& archetypes) {
+        if (!a_form->effects.empty()) {
+            for (auto effect : a_form->effects) {
+                if (auto base = effect ? effect->baseEffect : nullptr; base) {
+                    if (archetypes.contains(base->GetArchetype())) return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    bool HasAnyMagicEffectWithFlag(MagicItem* a_form, EffectSetting::EffectSettingData::Flag a_flag) {
+        if (!a_form->effects.empty()) {
+            for (auto effect : a_form->effects) {
+                if (auto base = effect ? effect->baseEffect : nullptr; base) {
+                    if (base->data.flags.all(a_flag)) return true;
                 }
             }
         }

@@ -8,7 +8,15 @@
     {
         "global" : "SGF_ActivePotionEffectsCount",
         "activeEffect" : {
-            "spellType" : 7
+            "spellType" : 7,
+            "hostile" : false
+        }
+    },
+    {
+        "global" : "SGF_ActivePoisonEffectsCount",
+        "activeEffect" : {
+            "spellType" : 7,
+            "hostile" : true
         }
     },
     {
@@ -29,6 +37,12 @@
                 "magicEffectKeyword" : "MagicBlessing"
             },
             "scope" : "lifetime"
+        }
+    },
+    {
+        "global" : "SGF_SummonsCount",
+        "activeEffect" : {
+            "archetype" : 18
         }
     }
 ]

@@ -18,6 +18,7 @@ namespace S_Inventory {
         ValueType valueType = ValueType::Count;
         ValueMod mod{};
         bool unique = false;
+        bool onlyPlayable = true;
     };
 
     std::vector<Rule> globals;
@@ -27,19 +28,22 @@ namespace S_Inventory {
         for (auto& item : globals) {
             float value = 0.0f;
             for (auto& [inventoryItem, data] : inventory) {
-                if (data.first == 0) continue; // why does InventoryItemMap contain items with 0 count?
+                if (inventoryItem->Is(RE::FormType::LeveledItem)) continue;
+                auto count = data.first;
+                auto* inv = data.second.get();
+                if (count == 0 || !inv) continue; // why does InventoryItemMap contain items with 0 count?
+                if (item.onlyPlayable && !inventoryItem->GetPlayable()) continue;
                 if (item.formFilter.has_value() && !ValidateFormFilter(inventoryItem, item.formFilter.value())) continue;
-                if (item.isEnchanted.has_value() &&
-                    data.second->IsEnchanted() != item.isEnchanted.value())
+                if (item.isEnchanted.has_value() && inv->IsEnchanted() != item.isEnchanted.value())
                     continue;
-                if (item.isStolen.has_value() && !!data.second->GetOwner() != item.isStolen.value())
+                if (item.isStolen.has_value() && !!inv->GetOwner() != item.isStolen.value())
                     continue;
 
-                int count = item.unique ? 1 : data.first;
+                count = item.unique ? 1 : count;
                 if (item.valueType == ValueType::Weight) {
-                    value += data.second.get()->GetWeight() * count;
+                    value += inv->GetWeight() * count;
                 } else if (item.valueType == ValueType::GoldValue) {
-                        value += data.second.get()->GetObject()->GetGoldValue() * count;
+                    value += inv->GetObject()->GetGoldValue() * count;
                 } else {
                     value += count;
                 }
@@ -77,6 +81,9 @@ namespace S_Inventory {
         }
         if (data.contains("stolen")) {
             rule.isStolen = data.at("stolen").get<bool>();
+        }
+        if (data.contains("onlyPlayable")) {
+            rule.onlyPlayable = data.at("onlyPlayable").get<bool>();
         }
         if (data.contains("valueType")) {
             std::string_view valueType = data.at("valueType").get<std::string_view>();

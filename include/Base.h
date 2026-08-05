@@ -10,9 +10,20 @@ struct ValueMod {
 struct FormFilter {
     std::unordered_set<int> formTypes;
     TESForm* formFilter = nullptr;
+    std::vector<BGSKeyword*> magicEffectKeyword; // @todo: probably remove this?
+    bool exclude = false;
+};
+
+struct SpellFilter {
     std::vector<BGSKeyword*> magicEffectKeyword;
-    bool excludeFilter = false;
     bool keywordMatchAll = false;
+    std::unordered_set<MagicSystem::SpellType> spellTypes;
+    std::unordered_set<MagicSystem::CastingType> castingTypes;
+    std::unordered_set<MagicSystem::Delivery> deliveries;
+    std::unordered_set<EffectArchetypes::ArchetypeID> archetypes;
+    std::optional<bool> hostile;
+    std::optional<bool> detrimental;
+    std::optional<bool> recover;
 };
 
 struct ConditionFilter {
@@ -55,7 +66,7 @@ std::optional<FormFilter> ParseFormFilter(const nlohmann::json_abi_v3_12_0::json
                 return std::nullopt;
         }
         if (data.contains("type")) Utils::FillSet<int>(data.at("type"), filter.formTypes);
-        if (data.contains("exclude")) filter.excludeFilter = data.at("exclude").get<bool>();
+        if (data.contains("exclude")) filter.exclude = data.at("exclude").get<bool>();
     }
     if (!filter.formFilter && filter.magicEffectKeyword.empty() && filter.formTypes.empty()) {
         return std::nullopt;
@@ -92,6 +103,45 @@ std::optional<ConditionFilter> ParseConditionFilter(const nlohmann::json_abi_v3_
     return filter;
 }
 
+std::optional<SpellFilter> ParseSpellFilter(const nlohmann::json_abi_v3_12_0::json& data) {
+    SpellFilter filter;
+    if (data.is_string()) {
+        if (!Utils::FillFormsArray<BGSKeyword>(data, filter.magicEffectKeyword))
+            return std::nullopt;
+    } else {
+        if (data.contains("magicEffectKeyword")) {
+            if (!Utils::FillFormsArray<BGSKeyword>(data.at("magicEffectKeyword"), filter.magicEffectKeyword))
+                return std::nullopt;
+            if (data.contains("keywordMatchAll")) {
+                filter.keywordMatchAll = data.at("keywordMatchAll").get<bool>();
+            }
+        }
+        if (data.contains("spellType")) {
+            Utils::FillSet<MagicSystem::SpellType>(data.at("spellType"), filter.spellTypes);
+        }
+        if (data.contains("castingType")) {
+            Utils::FillSet<MagicSystem::CastingType>(data.at("castingType"), filter.castingTypes);
+        }
+        if (data.contains("delivery")) {
+            Utils::FillSet<MagicSystem::Delivery>(data.at("delivery"), filter.deliveries);
+        }
+        if (data.contains("archetype")) {
+            Utils::FillSet<EffectArchetypes::ArchetypeID>(data.at("archetype"), filter.archetypes);
+        }
+        if (data.contains("hostile")) {
+            filter.hostile = data.at("hostile").get<bool>();
+        }
+        if (data.contains("detrimental")) {
+            filter.detrimental = data.at("detrimental").get<bool>();
+        }
+        if (data.contains("recover")) {
+            filter.recover = data.at("recover").get<bool>();
+        }
+    }
+
+    return filter;
+}
+
 bool ValidateFormFilter(TESForm* a_form, FormFilter& a_filter) {
     if (!a_form) return false; // safety check, should never match
     if (!a_filter.formTypes.empty() && !a_filter.formTypes.contains(std::to_underlying(a_form->GetFormType())))
@@ -99,7 +149,7 @@ bool ValidateFormFilter(TESForm* a_form, FormFilter& a_filter) {
     if (a_filter.formFilter) {
         bool isMatching = a_form->IsActor() ? Utils::ParseActorFilter(a_form->As<Actor>(), a_filter.formFilter)
                                             : Utils::ParseFormFilter(a_form, a_filter.formFilter);
-        if (a_filter.excludeFilter == isMatching) {
+        if (a_filter.exclude == isMatching) {
             return false;
         }
     }
@@ -126,7 +176,8 @@ bool ValidateConditionForm(ConditionFilter& filter) {
                 break;
             case FormType::Location:
                 if (auto location = player->GetCurrentLocation(); location) {
-                    if (!Utils::MatchLocation(player->GetCurrentLocation(), filter.form->As<BGSLocation>())) return false;
+                    if (!Utils::MatchLocation(player->GetCurrentLocation(), filter.form->As<BGSLocation>()))
+                        return false;
                 } else {
                     return false;
                 }
@@ -146,6 +197,25 @@ bool ValidateConditionForm(ConditionFilter& filter) {
         !player->GetCurrentLocation()->HasKeywordInArray(filter.locationKeyword, false)) {
         return false;
     }
+
+    return true;
+}
+
+bool ValidateSpellFilter(SpellFilter& a_filter, MagicItem* a_spell) {
+    if (!a_filter.magicEffectKeyword.empty() && !a_spell->HasKeywordInArray(a_filter.magicEffectKeyword, a_filter.keywordMatchAll)) return false;
+    if (!a_filter.spellTypes.empty() && !a_filter.spellTypes.contains(a_spell->GetSpellType())) return false;
+    if (!a_filter.castingTypes.empty() && !a_filter.castingTypes.contains(a_spell->GetCastingType())) return false;
+    if (!a_filter.deliveries.empty() && !a_filter.deliveries.contains(a_spell->GetDelivery())) return false;
+    if (!a_filter.archetypes.empty() && !Utils::HasAnyMagicEffectArchetype(a_spell, a_filter.archetypes)) return false;
+    if (a_filter.hostile.has_value() && a_filter.hostile.value() != a_spell->IsHostile()) return false;
+    if (a_filter.detrimental.has_value() &&
+        a_filter.detrimental.value() !=
+            Utils::HasAnyMagicEffectWithFlag(a_spell, EffectSetting::EffectSettingData::Flag::kDetrimental))
+        return false;
+    if (a_filter.recover.has_value() &&
+        a_filter.recover.value() !=
+            Utils::HasAnyMagicEffectWithFlag(a_spell, EffectSetting::EffectSettingData::Flag::kRecover))
+        return false;
 
     return true;
 }

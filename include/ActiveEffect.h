@@ -9,7 +9,7 @@ namespace S_ActiveEffect {
     struct Rule {
         TESGlobal* global = nullptr;
         std::optional<FormFilter> formFilter;
-        std::optional<MagicSystem::SpellType> spellType;
+        std::optional<SpellFilter> spellFilter;
         ValueMod mod{};
         bool unique = true;
         Scope scope = Scope::Current;
@@ -18,16 +18,11 @@ namespace S_ActiveEffect {
     std::vector<Rule> globals;
     std::unordered_set<EffectSetting*> newEffects;
 
-    bool ValidateSpell(Rule& rule, MagicItem* spell) {
-        if (rule.spellType && spell->GetSpellType() != rule.spellType) return false;
-        if (rule.formFilter.has_value() && !ValidateFormFilter(spell, rule.formFilter.value())) return false;
-        return true;
-    }
-
     void UpdateLifetimeGlobals() {
         auto* mt = PlayerCharacter::GetSingleton()->AsMagicTarget();
         if (!mt) return;
         auto effects = mt->GetActiveEffectList();
+        if (!effects) return;
         
         // compile a list of new spells applied to player from
         // the list of unordered_set<EffectSetting*> newEffects
@@ -37,9 +32,11 @@ namespace S_ActiveEffect {
         std::unordered_set<MagicItem*> spells;
         for (auto newEffect : newEffects) {
             for (auto* effect : *effects) {
-                if (effect->GetBaseObject() == newEffect) {
-                    spells.insert(effect->spell);
-                    break;
+                if (auto base = effect ? effect->GetBaseObject() : nullptr; base) {
+                    if (base == newEffect) {
+                        spells.insert(effect->spell);
+                        break;
+                    }
                 }
             }
         }
@@ -48,7 +45,8 @@ namespace S_ActiveEffect {
         for (auto spell : spells) {
             for (auto& item : globals) {
                 if (item.scope == Scope::Current) continue;
-                if (!ValidateSpell(item, spell)) continue;
+                if (item.formFilter.has_value() && !ValidateFormFilter(spell, item.formFilter.value())) continue;
+                if (item.spellFilter.has_value() && !ValidateSpellFilter(item.spellFilter.value(), spell)) continue;
 
                 UpdateGlobalValue(item.global, item.mod);
             }
@@ -60,18 +58,22 @@ namespace S_ActiveEffect {
         if (!mt) return;
         auto effects = mt->GetActiveEffectList();
         for (auto& item : globals) {
-            float value = 0.0f;
             if (item.scope == Scope::Lifetime) continue;
-            std::unordered_set<MagicItem*> visited;
-            for (auto* effect : *effects) {
-                if (!effect || !effect->spell) continue;
-                if (item.unique) {
-                    if (visited.contains(effect->spell)) continue;
-                    visited.insert(effect->spell);
-                }
-                if (!ValidateSpell(item, effect->spell)) continue;
+            float value = 0.0f;
+            if (effects) {
+                std::unordered_set<MagicItem*> visited;
+                for (auto* effect : *effects) {
+                    if (!effect || !effect->spell) continue;
+                    auto spell = effect->spell;
+                    if (item.unique) {
+                        if (visited.contains(spell)) continue;
+                        visited.insert(spell);
+                    }
+                    if (item.formFilter.has_value() && !ValidateFormFilter(spell, item.formFilter.value())) continue;
+                    if (item.spellFilter.has_value() && !ValidateSpellFilter(item.spellFilter.value(), spell)) continue;
 
-                value += 1;
+                    value += 1;
+                }
             }
             UpdateGlobalValue(item.global, item.mod, value, true);
         }
@@ -106,9 +108,7 @@ namespace S_ActiveEffect {
         auto& data = item.at("activeEffect");
         Rule rule;
         rule.mod = ParseValueMod(data);
-        if (data.contains("spellType")) {
-            rule.spellType = static_cast<MagicSystem::SpellType>(data.at("spellType").get<int>());
-        }
+        rule.spellFilter = ParseSpellFilter(data);
         if (data.contains("formFilter")) {
             rule.formFilter = ParseFormFilter(data.at("formFilter"));
             if (rule.formFilter == std::nullopt) return;
