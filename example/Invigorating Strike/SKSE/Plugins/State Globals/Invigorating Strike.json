@@ -1,0 +1,33 @@
+[
+    {
+        "global" : "InvigoratingStrike_HealEquipped",
+        "equip" : {
+            "spell" : true,
+            "spellFilter" : "MagicRestoreHealth"
+        }
+    },
+    {
+        "global" : "InvigoratingStrike_ComboHits",
+        "hit" : {
+            "weaponType" : "melee"
+        },
+        "hitTaken" : {
+            "mod" : 0
+        },
+        "combatstart" : {
+            "mod" : 0
+        },
+        "actions" : [
+            {
+                "type" : "spell",
+                "spell" : "InvigoratingStrike_SPEL",
+                "value" : 5,
+                "compare" : ">=",
+                "condition" : {
+                    "form" : "InvigoratingStrike_HealEquipped",
+                    "value" : 1
+                }
+            }
+        ]
+    }
+]
