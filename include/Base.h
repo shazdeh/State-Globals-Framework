@@ -166,9 +166,6 @@ bool ValidateConditionForm(ConditionFilter& filter) {
             case FormType::Perk:
                 if (!player->HasPerk(filter.form->As<BGSPerk>())) return false;
                 break;
-            case FormType::MagicEffect:
-                if (!player->HasMagicEffect(filter.form->As<EffectSetting>())) return false;
-                break;
             case FormType::Faction:
                 if (Utils::DoCompare(player->GetFactionRank(filter.form->As<TESFaction>(), true),
                                      static_cast<int>(filter.value), filter.compare))
@@ -242,7 +239,7 @@ void UpdateGlobalValue(TESGlobal* global, ValueMod& mod, float fMult = 1.0f, boo
 
     // run actions before value reset
     if (newValue != oldValue) {
-        S_Action::RunActions(global, newValue);
+        RunActions(global, newValue);
     }
 
     if (reset) {

@@ -24,7 +24,10 @@ namespace S_Inventory {
     std::vector<Rule> globals;
 
     void Process() {
-        auto inventory = PlayerCharacter::GetSingleton()->GetInventory();
+        auto player = PlayerCharacter::GetSingleton();
+        if (!player) return;
+        auto inventory = player->GetInventory();
+        if (inventory.empty()) return;
         for (auto& item : globals) {
             float value = 0.0f;
             for (auto& [inventoryItem, data] : inventory) {

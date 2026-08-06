@@ -9,8 +9,10 @@ PlayerCharacter* player;
 TESObjectWEAP* Unarmed;
 bool bLogIDs = false;
 
-#include "Action.h"
+void RunActions(TESGlobal* global, float a_globalValue);
+
 #include "Base.h"
+#include "Action.h"
 #include "SpellLearn.h"
 #include "Equip.h"
 #include "Kills.h"
@@ -32,6 +34,11 @@ bool bLogIDs = false;
 #include "Ini.h"
 #include "ModEvent.h"
 // #include "Quest.h"
+
+// what a mess
+void RunActions(TESGlobal* global, float a_globalValue) {
+    S_Action::RunActions(global, a_globalValue);
+}
 
 static void ParseData(const json& data) {
     for (const auto& item : data) {
