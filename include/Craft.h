@@ -27,7 +27,6 @@ namespace S_Craft {
 
     void Process() {
         for (auto& item : globals) {
-            ConsoleLog::GetSingleton()->Print(fmt::format("Process: {}", clib_util::editorID::get_editorID(item.global)).c_str());
             if (item.condition.has_value() && !ValidateConditionForm(item.condition.value())) continue;
             if (item.formFilter.has_value() && !ValidateFormFilter(lastCraftedObject, item.formFilter.value())) continue;
             if (item.furnitureFilter.has_value() &&
@@ -60,13 +59,7 @@ namespace S_Craft {
         Rule rule;
         rule.mod = ParseValueMod(data);
         if (data.contains("formFilter")) {
-            if (data.at("formFilter").is_string()) {
-                ConsoleLog::GetSingleton()->Print(fmt::format("filter: {}", data.at("formFilter").get<std::string>()).c_str());
-            }
             rule.formFilter = ParseFormFilter(data.at("formFilter"));
-            if (data.at("formFilter").is_string()) {
-                ConsoleLog::GetSingleton()->Print(fmt::format("filter: {}", data.at("formFilter").get<std::string>()).c_str());
-            }
             if (rule.formFilter == std::nullopt) return;
         }
         if (data.contains("furnitureFilter")) {
