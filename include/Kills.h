@@ -1,6 +1,8 @@
 #pragma once
 
 namespace S_Kills {
+    Actor* lastVictim = nullptr;
+
     enum ValueType { Counter = 0, TargetLevel = 1, TargetLevelDiff = 2 };
 
     struct Rule {
@@ -14,21 +16,21 @@ namespace S_Kills {
 
     std::vector<Rule> globals;
 
-    void Process(Actor* victim) {
+    void Process() {
         for (auto& item : globals) {
-            if (item.isCommanded.has_value() && victim->IsCommandedActor() != item.isCommanded) continue;
+            if (item.isCommanded.has_value() && lastVictim->IsCommandedActor() != item.isCommanded) continue;
             if (item.condition.has_value() && !ValidateConditionForm(item.condition.value())) continue;
-            if (item.formFilter.has_value() && !ValidateFormFilter(victim, item.formFilter.value())) continue;
+            if (item.formFilter.has_value() && !ValidateFormFilter(lastVictim, item.formFilter.value())) continue;
 
             switch (item.type) {
                 case ValueType::Counter:
                     UpdateGlobalValue(item.global, item.mod);
                     break;
                 case ValueType::TargetLevel:
-                    item.global->value = victim->GetLevel();
+                    item.global->value = lastVictim->GetLevel();
                     break;
                 case ValueType::TargetLevelDiff:
-                    item.global->value = static_cast<float>(player->GetLevel() - victim->GetLevel());
+                    item.global->value = static_cast<float>(player->GetLevel() - lastVictim->GetLevel());
                     break;
             }
         }
@@ -41,8 +43,8 @@ namespace S_Kills {
             )
                 return BSEventNotifyControl::kContinue;
             if (auto victimRef = event->actorDying.get(); victimRef) {
-                Actor* victim = victimRef->As<Actor>();
-                if (victim) Process(victim);
+                lastVictim = victimRef->As<Actor>();
+                if (lastVictim) Process();
             }
             return BSEventNotifyControl::kContinue;
         }
@@ -81,5 +83,12 @@ namespace S_Kills {
             static EventSink g_sink;
             ScriptEventSourceHolder::GetSingleton()->AddEventSink<TESDeathEvent>(&g_sink);
         }
+    }
+
+    Actor* GetLastKilledActor(StaticFunctionTag*) {
+        return lastVictim;
+    }
+
+    void OnLoadGame() { lastVictim = nullptr;
     }
 }

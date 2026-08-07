@@ -74,13 +74,17 @@ namespace Utils {
         if (data.is_array()) {
             for (auto& item : data) {
                 T* form = GetForm<T>(item.get<std::string>());
-                if (form) arr.push_back(form);
-                else return false;
+                if (form)
+                    arr.push_back(form);
+                else
+                    return false;
             }
         } else if (data.is_string()) {
             T* form = GetForm<T>(data.get<std::string>());
-            if (form) arr.push_back(form);
-            else return false;
+            if (form)
+                arr.push_back(form);
+            else
+                return false;
         }
 
         return true;
@@ -219,10 +223,10 @@ namespace Utils {
         return false;
     }
 
-    // a_filter can be: TESActor, BGSKeyword, TESFaction, BGSLocation, TESRace
+    // a_filter can be: TESActor, TESNPC, BGSKeyword, TESFaction, BGSLocation, TESRace
     // or a FormList containing a set of one of those
     bool ParseActorFilter(Actor* a_actor, TESForm* a_filter) {
-        if (a_actor == a_filter) return true;
+        if (a_actor == a_filter || a_actor->GetActorBase() == a_filter) return true;
         auto type = a_filter->GetFormType();
         switch (type) {
             case FormType::FormList: {
@@ -237,7 +241,7 @@ namespace Utils {
                     auto currentLocation = a_actor->GetCurrentLocation();
                     return MatchLocationList(currentLocation, list);
                 } else {
-                    return list->HasForm(a_actor);
+                    return list->HasForm(a_actor) || list->HasForm(a_actor->GetActorBase());
                 }
             }
             case FormType::Keyword: {

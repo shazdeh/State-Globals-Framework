@@ -70,7 +70,6 @@ namespace S_Barter {
                     }
                 } else {
                     ScriptEventSourceHolder::GetSingleton()->RemoveEventSink<TESContainerChangedEvent>(&containerSink);
-                    currentVendor = nullptr;
                 }
             }
             return BSEventNotifyControl::kContinue;
@@ -114,10 +113,15 @@ namespace S_Barter {
         globals.push_back(rule);
     }
 
+    Actor* GetLastVendor(StaticFunctionTag*) { return currentVendor; }
+
     void SetupEvents() {
         if (!globals.empty()) {
             static UISink uiSink;
             UI::GetSingleton()->AddEventSink<MenuOpenCloseEvent>(&uiSink);
         }
+    }
+
+    void OnLoadGame() { currentVendor = nullptr;
     }
 }

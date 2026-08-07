@@ -33,6 +33,7 @@ void RunActions(TESGlobal* global, float a_globalValue);
 #include "Wait.h"
 #include "Ini.h"
 #include "ModEvent.h"
+#include "Craft.h"
 // #include "Quest.h"
 
 // what a mess
@@ -68,6 +69,7 @@ static void ParseData(const json& data) {
         S_Wait::parseJSON(item, global);
         S_Ini::parseJSON(item, global);
         S_ModEvent::parseJSON(item, global);
+        S_Craft::parseJSON(item, global);
         //S_Quest::parseJSON(item, global);
     }
 }
@@ -125,24 +127,50 @@ void OnMessage(SKSE::MessagingInterface::Message* message) {
         S_Sleep::SetupEvents();
         S_Wait::SetupEvents();
         S_ModEvent::SetupEvents();
+        S_Craft::SetupEvents();
         //S_Quest::SetupEvents();
     } else if (message->type == SKSE::MessagingInterface::kSaveGame) {
         S_Save::Process();
     } else if (message->type == SKSE::MessagingInterface::kPostLoadGame) {
+        // adjust variables for newly loaded game
         S_Equip::OnLoadGame();
         S_Inventory::OnLoadGame();
         S_Perks::OnLoadGame();
-        S_Read::OnLoadGame();
         S_SpellLearn::OnLoadGame();
         S_Ini::OnLoadGame();
+
+        S_Barter::OnLoadGame();
+        S_Craft::OnLoadGame();
+        S_Hits::OnLoadGame();
+        S_Kills::OnLoadGame();
+        S_Magic::OnLoadGame();
+        S_Read::OnLoadGame();
+        S_SoulTrap::OnLoadGame();
     } else if (message->type == SKSE::MessagingInterface::kNewGame) {
         S_Ini::OnLoadGame();
     }
+}
+
+bool PapyrusBinder(BSScript::IVirtualMachine* vm) {
+    std::string_view script = "StateGlobals";
+
+    vm->RegisterFunction("GetLastVendor", script, S_Barter::GetLastVendor);
+    vm->RegisterFunction("GetLastCraftedObject", script, S_Craft::GetLastCraftedObject);
+    vm->RegisterFunction("GetLastUsedWorkbench", script, S_Craft::GetLastUsedWorkbench);
+    vm->RegisterFunction("GetLastHitTarget", script, S_Hits::GetLastHitTarget);
+    vm->RegisterFunction("GetLastHitTakenTarget", script, S_Hits::GetLastHitTakenTarget);
+    vm->RegisterFunction("GetLastKilledActor", script, S_Kills::GetLastKilledActor);
+    vm->RegisterFunction("GetLastCastedSpell", script, S_Magic::GetLastCastedSpell);
+    vm->RegisterFunction("GetLastBookRead", script, S_Read::GetLastBookRead);
+    vm->RegisterFunction("GetLastSoulTrappedActor", script, S_SoulTrap::GetLastSoulTrappedActor);
+
+    return false;
 }
 
 SKSEPluginLoad(const SKSE::LoadInterface* skse) {
     SetupLog();
     SKSE::Init(skse);
     SKSE::GetMessagingInterface()->RegisterListener(OnMessage);
+    SKSE::GetPapyrusInterface()->Register(PapyrusBinder);
     return true;
 }

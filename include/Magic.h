@@ -1,6 +1,8 @@
 #pragma once
 
 namespace S_Magic {
+    TESForm* lastCastedSpell = nullptr;
+
     struct Rule {
         TESGlobal* global = nullptr;
         std::optional<ConditionFilter> condition;
@@ -10,13 +12,15 @@ namespace S_Magic {
 
     std::vector<Rule> globals;
 
-    void Process(FormID spellID) {
-        TESForm* spell = TESForm::LookupByID(spellID);
-        if (!spell) return;
-        if (bLogIDs) ConsoleLog::GetSingleton()->Print(fmt::format("Spell Cast! ID: {:x}, Editor ID: {}", spell->GetFormID(), clib_util::editorID::get_editorID(spell)).c_str());
+    void Process() {
+        if (bLogIDs)
+            ConsoleLog::GetSingleton()->Print(fmt::format("Spell Cast! ID: {:x}, Editor ID: {}",
+                                                          lastCastedSpell->GetFormID(),
+                                                          clib_util::editorID::get_editorID(lastCastedSpell))
+                                                  .c_str());
         for (auto& item : globals) {
             if (item.condition.has_value() && !ValidateConditionForm(item.condition.value())) continue;
-            if (item.formFilter.has_value() && !ValidateFormFilter(spell, item.formFilter.value())) continue;
+            if (item.formFilter.has_value() && !ValidateFormFilter(lastCastedSpell, item.formFilter.value())) continue;
 
             UpdateGlobalValue(item.global, item.mod);
         }
@@ -27,7 +31,8 @@ namespace S_Magic {
             if (!event->object || event->spell == 0) return BSEventNotifyControl::kContinue;
             auto ref = event->object.get();
             if (ref && ref->IsPlayerRef()) {
-                Process(event->spell);
+                lastCastedSpell = TESForm::LookupByID(event->spell);
+                if (lastCastedSpell) Process();
             }
             return BSEventNotifyControl::kContinue;
         }
@@ -56,5 +61,12 @@ namespace S_Magic {
             static EventSink g_sink;
             ScriptEventSourceHolder::GetSingleton()->AddEventSink<TESSpellCastEvent>(&g_sink);
         }
+    }
+
+    TESForm* GetLastCastedSpell(StaticFunctionTag*) {
+        return lastCastedSpell;
+    }
+
+    void OnLoadGame() { lastCastedSpell = nullptr;
     }
 }

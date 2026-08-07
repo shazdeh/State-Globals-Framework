@@ -1,0 +1,14 @@
+[
+    {
+        "global" : "SGF_FoodsCooked",
+        "craft" : {
+            "formFilter" : "VendorItemFood"
+        }
+    },
+    {
+        "global" : "SGF_StavesCrafted",
+        "craft" : {
+            "furnitureFilter" : "DLC2StaffEnchanter"
+        }
+    }
+]

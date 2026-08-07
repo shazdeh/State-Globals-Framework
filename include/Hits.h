@@ -415,4 +415,17 @@ namespace S_Hits {
             return static_cast<std::int32_t>(now - e.expiresAtMS) >= 0;
         });
     }
+
+    TESObjectREFR* GetLastHitTarget(StaticFunctionTag*) {
+        return lastHitTarget;
+    }
+
+    TESObjectREFR* GetLastHitTakenTarget(StaticFunctionTag*) {
+        return lastHitTarget;
+    }
+
+    void OnLoadGame() {
+        lastHitTarget = nullptr;
+        lastHitTakenTarget = nullptr;
+    }
 }

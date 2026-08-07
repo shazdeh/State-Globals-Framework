@@ -1,6 +1,8 @@
 #pragma once
 
 namespace S_Read {
+    TESObjectBOOK* lastRead = nullptr;
+
     struct Rule {
         TESGlobal* global = nullptr;
         std::optional<ConditionFilter> condition;
@@ -26,6 +28,7 @@ namespace S_Read {
     class EventSink : public BSTEventSink<BooksRead::Event> {
         BSEventNotifyControl ProcessEvent(const BooksRead::Event* event, BSTEventSource<BooksRead::Event>*) {
             if (!event || !event->book) return BSEventNotifyControl::kContinue;
+            lastRead = event->book;
             Process(event->book, event->skillBook);
             return BSEventNotifyControl::kContinue;
         }
@@ -61,6 +64,10 @@ namespace S_Read {
         }
     }
 
-    void OnLoadGame() {
+    TESObjectBOOK* GetLastBookRead(StaticFunctionTag*) {
+        return lastRead;
+    }
+
+    void OnLoadGame() { lastRead = nullptr;
     }
 }

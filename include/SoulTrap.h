@@ -1,6 +1,8 @@
 #pragma once
 
 namespace S_SoulTrap {
+    Actor* lastVictim = nullptr;
+
     struct Rule {
         TESGlobal* global = nullptr;
         std::optional<ConditionFilter> condition;
@@ -22,6 +24,7 @@ namespace S_SoulTrap {
     class EventSink : public BSTEventSink<SoulsTrapped::Event> {
         BSEventNotifyControl ProcessEvent(const SoulsTrapped::Event* event, BSTEventSource<SoulsTrapped::Event>*) {
             if (event->trapper->IsPlayerRef()) {
+                lastVictim = event->target;
                 Process(event->target);
             }
             return BSEventNotifyControl::kContinue;
@@ -50,5 +53,12 @@ namespace S_SoulTrap {
             static EventSink g_sink;
             SoulsTrapped::GetEventSource()->AddEventSink<SoulsTrapped::Event>(&g_sink);
         }
+    }
+
+    Actor* GetLastSoulTrappedActor(StaticFunctionTag*) {
+        return lastVictim;
+    }
+
+    void OnLoadGame() { lastVictim = nullptr;
     }
 }
