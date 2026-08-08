@@ -17,3 +17,5 @@ Form Function GetLastCastedSpell() Global Native
 Book Function GetLastBookRead() Global Native
 
 Actor Function GetLastSoulTrappedActor() Global Native
+
+ObjectReference Function GetLastUsedFurniture() Global Native

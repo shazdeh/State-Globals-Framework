@@ -1,0 +1,82 @@
+[
+    {
+        "global" : "SGF_IsEnchanting",
+        "furnitureEnter" : {
+            "formFilter" : "isEnchanting"
+        },
+        "furnitureExit" : {
+            "formFilter" : "isEnchanting",
+            "mod" : 0
+        }
+    },
+    {
+        "global" : "SGF_IsDoingAlchemy",
+        "furnitureEnter" : {
+            "formFilter" : "isAlchemy"
+        },
+        "furnitureExit" : {
+            "formFilter" : "isAlchemy",
+            "mod" : 0
+        }
+    },
+    {
+        "global" : "SGF_IsCookingFood",
+        "furnitureEnter" : {
+            "formFilter" : "CraftingCookpot"
+        },
+        "furnitureExit" : {
+            "formFilter" : "CraftingCookpot",
+            "mod" : 0
+        }
+    },
+    {
+        "global" : "SGF_IsUsingSmelter",
+        "furnitureEnter" : {
+            "formFilter" : "CraftingSmelter"
+        },
+        "furnitureExit" : {
+            "formFilter" : "CraftingSmelter",
+            "mod" : 0
+        }
+    },
+    {
+        "global" : "SGF_IsUsingArmorTable",
+        "furnitureEnter" : {
+            "formFilter" : "CraftingSmithingArmorTable"
+        },
+        "furnitureExit" : {
+            "formFilter" : "CraftingSmithingArmorTable",
+            "mod" : 0
+        }
+    },
+    {
+        "global" : "SGF_IsUsingSharpeningWheel",
+        "furnitureEnter" : {
+            "formFilter" : "CraftingSmithingSharpeningWheel"
+        },
+        "furnitureExit" : {
+            "formFilter" : "CraftingSmithingSharpeningWheel",
+            "mod" : 0
+        }
+    },
+    {
+        "global" : "SGF_IsUsingForge",
+        "furnitureEnter" : {
+            "formFilter" : "CraftingSmithingForge"
+        },
+        "furnitureExit" : {
+            "formFilter" : "CraftingSmithingForge",
+            "mod" : 0
+        }
+    },
+    {
+        "global" : "SGF_IsUsingTanningRack",
+        "furnitureEnter" : {
+            "formFilter" : "CraftingTanningRack"
+        },
+        "furnitureExit" : {
+            "formFilter" : "CraftingTanningRack",
+            "mod" : 0
+        }
+    }
+]

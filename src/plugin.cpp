@@ -34,6 +34,8 @@ void RunActions(TESGlobal* global, float a_globalValue);
 #include "Ini.h"
 #include "ModEvent.h"
 #include "Craft.h"
+#include "Furniture.h"
+#include "LevelUp.h"
 // #include "Quest.h"
 
 // what a mess
@@ -70,6 +72,8 @@ static void ParseData(const json& data) {
         S_Ini::parseJSON(item, global);
         S_ModEvent::parseJSON(item, global);
         S_Craft::parseJSON(item, global);
+        S_Furniture::parseJSON(item, global);
+        S_LevelUp::parseJSON(item, global);
         //S_Quest::parseJSON(item, global);
     }
 }
@@ -128,6 +132,8 @@ void OnMessage(SKSE::MessagingInterface::Message* message) {
         S_Wait::SetupEvents();
         S_ModEvent::SetupEvents();
         S_Craft::SetupEvents();
+        S_Furniture::SetupEvents();
+        S_LevelUp::SetupEvents();
         //S_Quest::SetupEvents();
     } else if (message->type == SKSE::MessagingInterface::kSaveGame) {
         S_Save::Process();
@@ -163,6 +169,7 @@ bool PapyrusBinder(BSScript::IVirtualMachine* vm) {
     vm->RegisterFunction("GetLastCastedSpell", script, S_Magic::GetLastCastedSpell);
     vm->RegisterFunction("GetLastBookRead", script, S_Read::GetLastBookRead);
     vm->RegisterFunction("GetLastSoulTrappedActor", script, S_SoulTrap::GetLastSoulTrappedActor);
+    vm->RegisterFunction("GetLastUsedFurniture", script, S_Furniture::GetLastUsedFurniture);
 
     return false;
 }
